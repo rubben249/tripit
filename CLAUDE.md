@@ -28,6 +28,12 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 - Para enlazar un proyecto real: `npx supabase link --project-ref <ref>` y `npx supabase db push` aplica todas las migraciones desde cero.
 - Primer administrador: no hay asistente todavía (llega con el panel de administrador, Fase 5). Hasta entonces, tras el primer login, promocionar a mano una vez vía SQL: `update public.profiles set is_admin = true where email = '...';`.
 
+## CI / GitHub Actions
+
+- `.github/workflows/ci.yml`: typecheck, lint, format check, tests y export web en cada push/PR a `main`.
+- `.github/workflows/supabase-keepalive.yml`: ping programado cada 3 días para evitar la pausa por inactividad del plan gratuito. **Necesita los secrets `SUPABASE_URL` y `SUPABASE_ANON_KEY`** en el repositorio (Settings → Secrets and variables → Actions) una vez exista el proyecto — hasta entonces el workflow existe pero no se ejecuta (solo `schedule`/`workflow_dispatch`, no bloquea el CI normal).
+- Pendiente (cuando haya proyecto Supabase real): workflow de copia de seguridad periódica de BD + Storage a un destino privado (sección 12 del encargo) — no se ha escrito a ciegas sin un proyecto contra el que probarlo.
+
 ## Configuración por variable de entorno
 
 Por petición explícita del usuario, cualquier dato que pueda cambiar en el futuro (especialmente el nombre de la app) vive en variables de entorno, **no hardcodeado**:
