@@ -1,13 +1,16 @@
 import { useFonts } from 'expo-font';
 import {
+  Redirect,
   Stack,
   ThemeProvider as NavigationThemeProvider,
+  useSegments,
   type Theme as NavigationTheme,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { fontAssets } from '@/theme/tokens';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
@@ -38,13 +41,17 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
 
 function RootLayoutNav() {
   const theme = useTheme();
+  const { session, loading } = useAuth();
+  const segments = useSegments();
 
   const navigationTheme: NavigationTheme = {
     dark: theme.scheme === 'dark',
@@ -64,11 +71,17 @@ function RootLayoutNav() {
     },
   };
 
+  const inAuthFlow = segments[0] === 'login' || segments[0] === 'auth';
+
   return (
     <NavigationThemeProvider value={navigationTheme}>
+      {!loading && !session && !inAuthFlow ? <Redirect href="/login" /> : null}
+      {!loading && session && segments[0] === 'login' ? <Redirect href="/" /> : null}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Add' }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>
     </NavigationThemeProvider>
   );

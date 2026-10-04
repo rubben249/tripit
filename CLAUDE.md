@@ -14,7 +14,7 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 ## Stack (a confirmar/ajustar en docs/PLAN.md)
 
 - **App**: Expo (React Native) + TypeScript estricto + Expo Router. Un solo código para iOS, Android y web (react-native-web).
-- **Servidor**: Supabase (plan gratuito, región UE/Frankfurt) — Postgres + RLS, Auth, Storage, Realtime, Edge Functions.
+- **Servidor**: Supabase (plan gratuito, región UE/Londres — proyecto real `tripit`, `eu-west-2`) — Postgres + RLS, Auth, Storage, Realtime, Edge Functions.
 - **Mapas**: MapLibre + teselas gratuitas sin clave (p. ej. OpenFreeMap), globo 3D.
 - **Estado/datos**: TanStack Query. Animaciones: Reanimated + Gesture Handler. Listas: FlashList. Imágenes: expo-image.
 - **Offline-first**: base local con sincronización bidireccional (elección concreta y justificación en `docs/PLAN.md`).
@@ -24,9 +24,12 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 ## Supabase
 
 - Esquema completo en `supabase/migrations/*.sql`, versionado — nunca se edita el esquema a mano desde el dashboard en producción, siempre vía una migración nueva (`npx supabase migration new <nombre>`).
-- El cierre del registro abierto (sección 10 del encargo) se hace con un **Auth Hook `before_user_created`** (`public.check_allowed_email`, registrado en `supabase/config.toml`) que rechaza el alta si el email no está en `allowed_emails` — no es solo una política RLS, es lo que de verdad bloquea el registro. **Sin verificar aún contra un proyecto real** (no había Docker disponible al escribirlo): la primera vez que haya un proyecto Supabase enlazado, probar explícitamente que registrarse con un email no invitado falla, antes de confiar en esta puerta.
-- Para enlazar un proyecto real: `npx supabase link --project-ref <ref>` y `npx supabase db push` aplica todas las migraciones desde cero.
+- Proyecto real: `tripit` (`kcdpfjfubcnkdwnmdjau`), región Londres (`eu-west-2`). `.env` local tiene `EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY` (gitignored); los mismos valores están como secrets de GitHub Actions.
+- El cierre del registro abierto (sección 10 del encargo) se hace con un **Auth Hook `before_user_created`** (`public.check_allowed_email`) registrado manualmente en el dashboard (Authentication → Hooks — esto no se puede desplegar por SQL/CLI, es config de la plataforma). **Verificado contra el proyecto real**: una petición de OTP con un email no listado devuelve 403 "This app is invite-only...".
+- `supabase link`/`db push` desde la CLI dieron problemas de permisos del token de acceso personal en esta cuenta (ver historial de la Fase 1 si hace falta depurarlo más). La migración inicial se aplicó igualmente de forma directa contra la base de datos (conexión Postgres vía el pooler de Supavisor, `aws-0-eu-west-2.pooler.supabase.com:6543`, con la contraseña de la BD) y quedó registrada en `supabase_migrations.schema_migrations` para que la CLI no intente reaplicarla. Para la **próxima** migración, intentar primero `npx supabase link --project-ref kcdpfjfubcnkdwnmdjau` + `npx supabase db push`; si el token vuelve a fallar, repetir el mismo método directo.
 - Primer administrador: no hay asistente todavía (llega con el panel de administrador, Fase 5). Hasta entonces, tras el primer login, promocionar a mano una vez vía SQL: `update public.profiles set is_admin = true where email = '...';`.
+- Auth: `src/lib/supabase.ts` (cliente, con un storage adapter que evita tocar `window` durante el renderizado estático en servidor), `src/features/auth/` (`AuthProvider` + `LoginScreen`), `app/login.tsx` y `app/auth/callback.tsx`. Flujo magic-link con PKCE (`flowType: 'pkce'`) para que el callback use `?code=` en vez de un fragmento `#access_token=`, así funciona igual en web y en los deep links nativos (`tripit://auth/callback`, vía `expo-linking`). El layout raíz redirige a `/login` si no hay sesión.
+- Pendiente de verificar con un dispositivo/navegador real (no solo curl): completar el flujo de magic-link de principio a fin (pedir el enlace, tocarlo, llegar autenticado a `/`). Para eso hace falta además añadir las redirect URLs del proyecto (`tripit://*` y la URL de despliegue web) en el dashboard, Authentication → URL Configuration — todavía no están añadidas.
 
 ## CI / GitHub Actions
 
