@@ -38,6 +38,31 @@ Por petición explícita del usuario, cualquier dato que pueda cambiar en el fut
 - Sin datos personales ni documentos de identidad: la app solo gestiona reservas de viaje, nunca pasaportes/DNI.
 - Sin comentarios explicativos de "qué hace" el código (los nombres ya lo dicen); solo comentarios para decisiones no obvias (zonas horarias, límites de APIs gratuitas, workarounds).
 
+## Arquitectura modular y configuración centralizada (petición explícita del usuario)
+
+Dos reglas transversales, por encima de cualquier otra conveniencia: **todo lo personalizable vive en un solo sitio** y **el código está repartido en módulos pequeños y claros**, nunca en archivos monolíticos. El objetivo es que cualquier cambio futuro (recolorear la app, añadir una categoría, cambiar un límite) se haga en un único lugar evidente, y que cualquier archivo se entienda sin tener que leerse medio proyecto.
+
+- **Tema y diseño centralizados** en `src/theme/` (tokens de color de las tres paletas, tipografía, espaciado, radios). Ningún componente usa un hex o un tamaño "a mano": todo pasa por `src/theme/tokens.ts`. Cambiar de paleta (Atlas Blue → otra) debe ser editar un único archivo.
+- **Categorías de reserva centralizadas** en `src/features/bookings/categories.ts` (icono, color, campos por categoría — sección 5 del encargo): es la única fuente de verdad que lee tanto el itinerario como el mapa, los gastos y las notificaciones.
+- **Configuración/flags centralizados** en `src/config/` (lectura de `EXPO_PUBLIC_*`, feature flags, constantes de negocio como el círculo máximo de usuarios). Nada de `process.env` disperso por el código.
+- **Estructura de carpetas por dominio**, no por tipo de archivo:
+  ```
+  src/
+    app/            # rutas de Expo Router (pantallas, lo más fino posible)
+    features/       # un folder por dominio: trips/ itinerary/ bookings/ expenses/ map/ people/ tasks/
+      <feature>/
+        components/
+        hooks/
+        api.ts      # llamadas a Supabase de ese dominio
+        types.ts
+    theme/          # tokens centralizados (color, tipografía, espaciado)
+    config/         # env vars, feature flags, constantes centralizadas
+    lib/            # utilidades transversales (fechas, zonas horarias, dinero)
+    components/     # solo componentes de UI genéricos sin lógica de dominio (Button, Card, Sheet...)
+  ```
+- Las pantallas en `app/` son finas: orquestan componentes de `features/`, no contienen lógica de negocio.
+- Antes de añadir una tercera repetición del mismo valor o lógica, extraerla a `theme/`, `config/` o `lib/` según corresponda.
+
 ## Git
 
 - Commits pequeños y descriptivos.
