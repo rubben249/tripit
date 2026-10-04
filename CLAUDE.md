@@ -21,6 +21,13 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 - **CI**: GitHub Actions (lint, tipos, tests, build).
 - **Errores**: Sentry (plan gratuito).
 
+## Supabase
+
+- Esquema completo en `supabase/migrations/*.sql`, versionado — nunca se edita el esquema a mano desde el dashboard en producción, siempre vía una migración nueva (`npx supabase migration new <nombre>`).
+- El cierre del registro abierto (sección 10 del encargo) se hace con un **Auth Hook `before_user_created`** (`public.check_allowed_email`, registrado en `supabase/config.toml`) que rechaza el alta si el email no está en `allowed_emails` — no es solo una política RLS, es lo que de verdad bloquea el registro. **Sin verificar aún contra un proyecto real** (no había Docker disponible al escribirlo): la primera vez que haya un proyecto Supabase enlazado, probar explícitamente que registrarse con un email no invitado falla, antes de confiar en esta puerta.
+- Para enlazar un proyecto real: `npx supabase link --project-ref <ref>` y `npx supabase db push` aplica todas las migraciones desde cero.
+- Primer administrador: no hay asistente todavía (llega con el panel de administrador, Fase 5). Hasta entonces, tras el primer login, promocionar a mano una vez vía SQL: `update public.profiles set is_admin = true where email = '...';`.
+
 ## Configuración por variable de entorno
 
 Por petición explícita del usuario, cualquier dato que pueda cambiar en el futuro (especialmente el nombre de la app) vive en variables de entorno, **no hardcodeado**:
@@ -70,9 +77,24 @@ Dos reglas transversales, por encima de cualquier otra conveniencia: **todo lo p
 - Tag de versión semántica al cerrar cada fase (`v0.1.0`, `v0.2.0`, …) para poder volver atrás.
 - Nunca `--no-verify`, nunca force-push a `main` sin confirmación explícita.
 
-## Cómo ejecutar tests
+## Requisito de Node y cómo ejecutar todo
 
-*(Se actualizará en cuanto exista tooling real en Fase 1. Previsto: `npm test` para unitarios (Jest/Vitest), `npm run test:e2e:web` con Playwright, Maestro/Detox para E2E móvil, `npm run typecheck` y `npm run lint` en CI.)*
+Este proyecto necesita **Node ≥ 22.13** (lo exige la CLI de Expo/Metro actual). El sistema de esta máquina solo tenía Node 18, así que hay un Node 22 local descargado en `.tools/node20/` (gitignored, no es parte del repo, solo una herramienta local). Para trabajar en el proyecto:
+
+```bash
+export PATH="$(pwd)/.tools/node20/bin:$PATH"   # si el Node del sistema es < 22.13
+npm install
+npm run typecheck   # tsc --noEmit
+npm run lint         # expo lint (eslint-config-expo + prettier)
+npm run format:check # prettier --check .
+npm run web          # expo start --web
+npm run android       # expo start --android
+npm run ios           # expo start --ios
+```
+
+Si la máquina donde se continúe el desarrollo ya tiene Node ≥ 22.13 instalado de forma nativa, el `export PATH` de arriba no hace falta.
+
+*(Pendiente de Fase 2 en adelante: `npm test` para unitarios (Jest), E2E con Playwright (web) y Maestro/Detox (móvil) — se añaden en cuanto haya lógica de negocio que testear.)*
 
 ## Escala objetivo
 
