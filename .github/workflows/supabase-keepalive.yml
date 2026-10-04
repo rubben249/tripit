@@ -15,11 +15,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase REST endpoint
+        # Any HTTP response (even 401/404) proves the project was reached and
+        # is awake — that's all a keep-alive ping needs. `-f` would treat a
+        # normal 401 on the introspection root (anon key can't read the
+        # OpenAPI schema on recent Supabase projects) as a failure, which is
+        # not what we want to alert on here.
         run: |
-          curl -sf "${SUPABASE_URL}/rest/v1/" \
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "${SUPABASE_URL}/rest/v1/" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            -o /dev/null
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          echo "Supabase responded with HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "No response at all — project may be unreachable." >&2
+            exit 1
+          fi
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
