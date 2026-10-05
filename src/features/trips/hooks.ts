@@ -7,6 +7,7 @@ import {
   listParticipants,
   listTrips,
   listTrashedTrips,
+  permanentlyDeleteTrip,
   removeParticipant,
   restoreTrip,
   trashTrip,
@@ -70,6 +71,14 @@ export function useRestoreTrip() {
       queryClient.invalidateQueries({ queryKey: tripsKey });
       queryClient.invalidateQueries({ queryKey: trashKey });
     },
+  });
+}
+
+export function usePermanentlyDeleteTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => permanentlyDeleteTrip(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trashKey }),
   });
 }
 

@@ -52,6 +52,7 @@ export default function ItineraryScreen() {
               <AddBookingForm
                 tripId={id}
                 dayId={day.id}
+                cityId={day.cityId}
                 date={day.date}
                 onDone={() => setAddingToDay(null)}
               />

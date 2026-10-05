@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/TextField';
 import { bookingCategories, categoryKeys, type CategoryKey } from '@/features/bookings/categories';
@@ -11,11 +11,13 @@ import { useCreateBooking } from './hooks';
 export function AddBookingForm({
   tripId,
   dayId,
+  cityId,
   date,
   onDone,
 }: {
   tripId: string;
   dayId: string;
+  cityId: string | null;
   date: string;
   onDone: () => void;
 }) {
@@ -28,8 +30,10 @@ export function AddBookingForm({
   const onSave = async () => {
     const trimmed = title.trim();
     if (!trimmed) return;
+    Keyboard.dismiss();
     await createBooking.mutateAsync({
       dayId,
+      cityId,
       categoryKey,
       title: trimmed,
       startAt: time.trim() ? `${date}T${time.trim()}:00` : undefined,
@@ -95,6 +99,7 @@ export function AddBookingForm({
           onChangeText={setTitle}
           placeholder="What is it?"
           style={{ flex: 1, paddingHorizontal: theme.space.sm, paddingVertical: 8 }}
+          name={`booking-title-${dayId}`}
         />
         <TextField
           value={time}
@@ -104,6 +109,7 @@ export function AddBookingForm({
             theme.type.data,
             { width: 72, paddingHorizontal: theme.space.sm, paddingVertical: 8 },
           ]}
+          name={`booking-time-${dayId}`}
         />
       </View>
 

@@ -55,6 +55,7 @@ export default function PeopleScreen() {
           placeholder="Add a name…"
           onSubmitEditing={onAdd}
           style={{ flex: 1 }}
+          name="participant-name"
         />
         <Pressable
           onPress={onAdd}

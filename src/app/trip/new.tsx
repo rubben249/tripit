@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Keyboard, Pressable, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
+import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
@@ -15,18 +16,19 @@ export default function NewTripScreen() {
   const createTrip = useCreateTrip();
 
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [currency, setCurrency] = useState(env.defaultCurrency);
   const [error, setError] = useState('');
 
   const onCreate = async () => {
     setError('');
+    Keyboard.dismiss();
     try {
       const trip = await createTrip.mutateAsync({
         name: name.trim(),
-        startDate: startDate.trim() || undefined,
-        endDate: endDate.trim() || undefined,
+        startDate: startDate ?? undefined,
+        endDate: endDate ?? undefined,
         defaultCurrency: currency.trim().toUpperCase() || 'EUR',
       });
       router.replace(`/trip/${trip.id}`);
@@ -42,21 +44,40 @@ export default function NewTripScreen() {
 
       <View style={{ gap: theme.space.xs }}>
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>NAME</Text>
-        <TextField value={name} onChangeText={setName} placeholder="Italy, summer 2026…" />
+        <TextField
+          value={name}
+          onChangeText={setName}
+          placeholder="Italy, summer 2026…"
+          name="trip-name"
+        />
       </View>
 
       <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
         <View style={{ flex: 1, gap: theme.space.xs }}>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>START DATE</Text>
-          <TextField value={startDate} onChangeText={setStartDate} placeholder="2026-08-28" />
+          <DateField
+            label="Start date"
+            value={startDate}
+            onChange={(date) => {
+              setStartDate(date);
+              if (date && endDate && date > endDate) setEndDate(date);
+            }}
+            name="trip-start-date"
+          />
         </View>
         <View style={{ flex: 1, gap: theme.space.xs }}>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>END DATE</Text>
-          <TextField value={endDate} onChangeText={setEndDate} placeholder="2026-09-03" />
+          <DateField
+            label="End date"
+            value={endDate}
+            onChange={setEndDate}
+            minDate={startDate}
+            name="trip-end-date"
+          />
         </View>
       </View>
       <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-        Dates are optional — leave blank to save as a draft. Format: YYYY-MM-DD.
+        Dates are optional — leave blank to save as a draft.
       </Text>
 
       <View style={{ gap: theme.space.xs }}>
@@ -67,6 +88,7 @@ export default function NewTripScreen() {
           placeholder="EUR"
           autoCapitalize="characters"
           maxLength={3}
+          name="trip-currency"
         />
       </View>
 

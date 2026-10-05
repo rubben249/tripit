@@ -1,40 +1,49 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Keyboard, Pressable, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
-import { useTrip } from '@/features/trips/hooks';
+import { useTrashTrip, useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TripOverviewScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: trip } = useTrip(id);
   const { data: cities } = useCities(id);
   const { data: bookings } = useBookings(id);
   const addCity = useAddCity(id);
+  const trashTrip = useTrashTrip();
   const [newCity, setNewCity] = useState('');
-  const [arrivalDate, setArrivalDate] = useState('');
-  const [departureDate, setDepartureDate] = useState('');
+  const [arrivalDate, setArrivalDate] = useState<string | null>(null);
+  const [departureDate, setDepartureDate] = useState<string | null>(null);
 
   if (!trip) return null;
 
   const onAddCity = async () => {
     const name = newCity.trim();
     if (!name) return;
+    Keyboard.dismiss();
     setNewCity('');
-    const arrival = arrivalDate.trim();
-    const departure = departureDate.trim();
-    setArrivalDate('');
-    setDepartureDate('');
+    const arrival = arrivalDate;
+    const departure = departureDate;
+    setArrivalDate(null);
+    setDepartureDate(null);
     await addCity.mutateAsync({
       name,
-      arrivalDate: arrival || undefined,
-      departureDate: departure || undefined,
+      arrivalDate: arrival ?? undefined,
+      departureDate: departure ?? undefined,
     });
+  };
+
+  const onDeleteTrip = async () => {
+    await trashTrip.mutateAsync(id);
+    router.replace('/');
   };
 
   return (
@@ -84,6 +93,7 @@ export default function TripOverviewScreen() {
               onChangeText={setNewCity}
               placeholder="Add a city…"
               style={{ flex: 1 }}
+              name="new-city-name"
             />
             <Pressable
               onPress={onAddCity}
@@ -98,26 +108,38 @@ export default function TripOverviewScreen() {
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-            <TextField
-              value={arrivalDate}
-              onChangeText={setArrivalDate}
-              placeholder="Arrival YYYY-MM-DD"
-              style={{ flex: 1 }}
-              onSubmitEditing={onAddCity}
-            />
-            <TextField
-              value={departureDate}
-              onChangeText={setDepartureDate}
-              placeholder="Departure YYYY-MM-DD"
-              style={{ flex: 1 }}
-              onSubmitEditing={onAddCity}
-            />
+            <View style={{ flex: 1 }}>
+              <DateField
+                label="Arrival date"
+                value={arrivalDate}
+                onChange={(date) => {
+                  setArrivalDate(date);
+                  if (date && departureDate && date > departureDate) setDepartureDate(date);
+                }}
+                placeholder="Arrival"
+                name="new-city-arrival"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <DateField
+                label="Departure date"
+                value={departureDate}
+                onChange={setDepartureDate}
+                placeholder="Departure"
+                minDate={arrivalDate}
+                name="new-city-departure"
+              />
+            </View>
           </View>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
             Add arrival and departure dates to generate that city&apos;s day-by-day itinerary.
           </Text>
         </View>
       </View>
+
+      <Pressable onPress={onDeleteTrip} style={{ paddingVertical: theme.space.md }}>
+        <Text style={[theme.type.caption, { color: theme.colors.warn }]}>Delete trip</Text>
+      </Pressable>
     </Screen>
   );
 }

@@ -106,6 +106,7 @@ function RootLayoutNav() {
         <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Add' }} />
         <Stack.Screen name="trip/new" options={{ presentation: 'modal', title: 'New trip' }} />
         <Stack.Screen name="trip/[id]" options={{ headerShown: true }} />
+        <Stack.Screen name="trash" options={{ title: 'Trash' }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>
