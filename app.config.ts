@@ -9,8 +9,8 @@ const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
 // leave it unset and serve from "/" as normal.
 const webBasePath = process.env.EXPO_WEB_BASE_PATH ?? '';
 
-const paperLight = '#F6F3EC';
-const inkDark = '#0E1626';
+const paperLight = '#F7F1E6';
+const inkDark = '#17110B';
 
 const config: ExpoConfig = {
   name: appName,

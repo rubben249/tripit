@@ -5,7 +5,7 @@ import type { Ionicons } from '@expo/vector-icons';
  * Single source of truth for booking categories (icon, color, label) — used
  * by the itinerary, the map, expenses and notifications alike. See
  * CLAUDE.md "Arquitectura modular y configuración centralizada". Colors stay
- * inside the Atlas Blue family (see src/theme/tokens.ts); categories are
+ * inside the Atlas Umber family (see src/theme/tokens.ts); categories are
  * told apart mainly by icon, per docs/REQUISITOS.md section 5.
  *
  * Personalization (recoloring, hiding, custom categories) is explicitly out
@@ -43,43 +43,43 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     key: 'flight',
     label: 'Flight',
     icon: 'airplane-outline',
-    color: '#3E5C7E',
+    color: '#8A5A34',
     isRange: false,
   },
-  train: { key: 'train', label: 'Train', icon: 'train-outline', color: '#1C2B45', isRange: false },
+  train: { key: 'train', label: 'Train', icon: 'train-outline', color: '#4A3222', isRange: false },
   bus: {
     key: 'bus',
     label: 'Bus / transfer',
     icon: 'bus-outline',
-    color: '#5B7A99',
+    color: '#A9825A',
     isRange: false,
   },
   local_transport: {
     key: 'local_transport',
     label: 'Local transport',
     icon: 'swap-horizontal-outline',
-    color: '#7A93AC',
+    color: '#C2A47D',
     isRange: false,
   },
   car_rental: {
     key: 'car_rental',
     label: 'Car rental',
     icon: 'car-outline',
-    color: '#425A72',
+    color: '#6B4A33',
     isRange: true,
   },
   boat_ferry: {
     key: 'boat_ferry',
     label: 'Boat / ferry',
     icon: 'boat-outline',
-    color: '#4F7585',
+    color: '#5E7A6B',
     isRange: false,
   },
   accommodation: {
     key: 'accommodation',
     label: 'Accommodation',
     icon: 'bed-outline',
-    color: '#B8893B',
+    color: '#A8763E',
     isRange: true,
   },
   restaurant: {
@@ -93,38 +93,38 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     key: 'ticket_activity',
     label: 'Ticket / activity',
     icon: 'ticket-outline',
-    color: '#6B5B95',
+    color: '#7A5C42',
     isRange: false,
   },
   sightseeing: {
     key: 'sightseeing',
     label: 'Sightseeing',
     icon: 'camera-outline',
-    color: '#90A4BC',
+    color: '#C9AE8C',
     isRange: false,
   },
   shopping: {
     key: 'shopping',
     label: 'Shopping',
     icon: 'bag-outline',
-    color: '#A68A64',
+    color: '#B08D5B',
     isRange: false,
   },
   leisure: {
     key: 'leisure',
     label: 'Leisure',
     icon: 'happy-outline',
-    color: '#5C8374',
+    color: '#6E7B4F',
     isRange: false,
   },
   note: {
     key: 'note',
     label: 'Note',
     icon: 'document-text-outline',
-    color: '#8A94A3',
+    color: '#9C8B76',
     isRange: false,
   },
-  task: { key: 'task', label: 'Task', icon: 'checkbox-outline', color: '#5B6B82', isRange: false },
+  task: { key: 'task', label: 'Task', icon: 'checkbox-outline', color: '#5B4A3A', isRange: false },
 };
 
 export const categoryKeys = Object.keys(bookingCategories) as CategoryKey[];

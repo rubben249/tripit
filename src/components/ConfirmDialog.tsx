@@ -78,7 +78,7 @@ function ConfirmDialog({
       <Pressable
         style={{
           flex: 1,
-          backgroundColor: 'rgba(14,22,38,0.5)',
+          backgroundColor: 'rgba(23,17,11,0.5)',
           alignItems: 'center',
           justifyContent: 'center',
           padding: theme.space.lg,

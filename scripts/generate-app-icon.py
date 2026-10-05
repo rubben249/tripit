@@ -1,4 +1,5 @@
-"""Regenerates assets/images/{icon,favicon,splash-icon,android-icon-*}.png
+"""SUPERSEDED (2026-10-05) by scripts/generate-logo-t.py — kept for history.
+Regenerates assets/images/{icon,favicon,splash-icon,android-icon-*}.png
 — a circular badge with a merged plane + suitcase mark on a deep navy
 vertical gradient. Pure PIL (no SVG renderer needed). Run with:
     python3 scripts/generate-app-icon.py

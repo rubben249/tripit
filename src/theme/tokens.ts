@@ -1,19 +1,21 @@
 /**
- * Centralized design tokens — the "Atlas Blue" palette approved 2026-10-04
- * (see docs/PLAN.md and the design-proposal artifact). No component should
- * hardcode a color, font family, size or spacing value outside this file —
- * see CLAUDE.md "Arquitectura modular y configuración centralizada".
+ * Centralized design tokens — the "Atlas Umber" palette (brown-based,
+ * replacing the original Atlas Blue; decision 2026-10-05: sober, elegant,
+ * deliberately narrow range — not a wide rainbow of browns). See
+ * docs/PLAN.md and CLAUDE.md "Arquitectura modular y configuración
+ * centralizada": no component should hardcode a color, font family, size or
+ * spacing value outside this file.
  */
 
 export const brand = {
-  ink: '#1C2B45',
-  steel: '#3E5C7E',
-  mist: '#90A4BC',
-  paper: '#F6F3EC',
-  stone: '#C9C0AE',
-  accent: '#B8893B',
-  good: '#4C7A5E',
-  warn: '#B2552E',
+  ink: '#2B1E12',
+  steel: '#6B4A33',
+  mist: '#C9AE8C',
+  paper: '#F7F1E6',
+  stone: '#D9C6A8',
+  accent: '#A8763E',
+  good: '#6E7B4F',
+  warn: '#AE5A35',
 } as const;
 
 export type ColorScheme = 'light' | 'dark';
@@ -36,11 +38,11 @@ export interface ThemeColors {
 
 const light: ThemeColors = {
   background: brand.paper,
-  surface: '#FFFFFF',
-  surfaceAlt: '#FBF9F4',
+  surface: '#FFFBF4',
+  surfaceAlt: '#FAF1E1',
   text: brand.ink,
-  textMuted: '#5B6B82',
-  border: '#DDD5C4',
+  textMuted: '#7A6552',
+  border: '#E3D5BE',
   ink: brand.ink,
   steel: brand.steel,
   mist: brand.mist,
@@ -51,19 +53,19 @@ const light: ThemeColors = {
 };
 
 const dark: ThemeColors = {
-  background: '#0E1626',
-  surface: '#182438',
-  surfaceAlt: '#131E30',
-  text: '#EDE7DA',
-  textMuted: '#A8B3C2',
-  border: '#2A3A52',
+  background: '#17110B',
+  surface: '#241B12',
+  surfaceAlt: '#1D160F',
+  text: '#EFE6D8',
+  textMuted: '#B6A48D',
+  border: '#3B2D1E',
   ink: brand.ink,
   steel: brand.steel,
   mist: brand.mist,
-  accent: '#D1A454',
+  accent: '#C99455',
   good: brand.good,
   warn: brand.warn,
-  onInk: '#EDE7DA',
+  onInk: '#EFE6D8',
 };
 
 export const palettes: Record<ColorScheme, ThemeColors> = { light, dark };

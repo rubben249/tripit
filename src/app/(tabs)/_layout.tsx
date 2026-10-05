@@ -13,8 +13,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Using `ink` here was the bug: in dark mode ink (#1C2B45) and the
-        // tab bar surface (#182438) are nearly the same tone, so the active
+        // Using `ink` here was the bug: in dark mode ink (#2B1E12) and the
+        // tab bar surface (#241B12) are nearly the same tone, so the active
         // tab's icon+label were nearly invisible against their own
         // background — looked like the tab disappeared on press. `accent`
         // has real contrast against the surface in both themes.

@@ -29,6 +29,7 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 - **Offline-first**: base local con sincronización bidireccional (elección concreta y justificación en `docs/PLAN.md`).
 - **CI**: GitHub Actions (lint, tipos, tests, build).
 - **Errores**: Sentry (plan gratuito).
+- **Tipo de cambio**: [Frankfurter](https://api.frankfurter.dev) (BCE, gratis, sin clave, sin tarjeta) para el conversor de divisas de la pestaña Expenses — `src/lib/currency.ts`. Ojo: el dominio antiguo `api.frankfurter.app` ahora redirige (301) a `api.frankfurter.dev/v1/...`; llamar siempre al dominio `.dev` directamente, el salto de redirección no es limpio para `fetch()` desde el navegador.
 
 ## Supabase
 

@@ -1,7 +1,8 @@
-"""One-off: extract the white mark (ring+plane+suitcase) from the user's own
+"""SUPERSEDED (2026-10-05) by scripts/generate-logo-t.py — kept for history.
+One-off: extract the white mark (ring+plane+suitcase) from the user's own
 reference screenshot as a clean alpha-masked silhouette, recolor it to our
-Atlas Blue palette, and regenerate all icon outputs from it — preserving
-their exact composition instead of a hand-drawn approximation.
+(then-current) Atlas Blue palette, and regenerate all icon outputs from it —
+preserving their exact composition instead of a hand-drawn approximation.
 Run with: python3 scripts/extract_user_logo.py
 """
 
