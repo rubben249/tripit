@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Keyboard, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Button } from '@/components/Button';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -124,6 +124,11 @@ export default function TripOverviewScreen() {
           <Button variant="secondary" size="sm" onPress={onStartRename}>
             Rename
           </Button>
+          <Link href={`/share/${trip.id}`} asChild>
+            <Button variant="secondary" size="sm">
+              Share…
+            </Button>
+          </Link>
         </View>
       )}
 

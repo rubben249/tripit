@@ -89,7 +89,7 @@
 **Modelo local-first y compartir** (sustituye la antigua sección de "sincronización y resolución de conflictos" — aquella asumía que todo viaje sincronizaba en vivo contra Supabase desde el principio):
 - Cada viaje se crea con un UUID generado **en el propio cliente** (no depende de que exista fila alguna en Supabase) y vive en SQLite (nativo) / IndexedDB (web) como única fuente de verdad, sin red de por medio.
 - "Compartir" (Fase 5, diseño detallado pendiente) es un acto explícito, no sincronización continua por defecto: el dueño genera una sesión temporal (código corto + QR, caduca a los 3 minutos) y elige qué categorías de datos incluir, pudiendo excluir campos marcados como sensibles (p. ej. nº de vuelo) por defecto o a voluntad.
-- **Preguntas de diseño todavía abiertas**, a resolver contigo al empezar la Fase 5 antes de construirlo:
+- **Preguntas de diseño de la Fase 5 — ✅ respondidas 2026-10-05** (copia puntual independiente; un código vale para todos los receptores en sus 3 minutos; los cambios del receptor no vuelven). Texto original de las preguntas:
   1. La copia que recibe el otro dispositivo, ¿queda como una instantánea independiente (como un export/import puntual), o el receptor puede quedarse "siguiendo" cambios futuros del original? Si es lo segundo, ese viaje concreto sí necesita un respaldo en Supabase aunque sea ligero.
   2. ¿Un código temporal sirve para un solo receptor o varios a la vez (p. ej. compartir con todo un grupo familiar de una vez)?
   3. Si el receptor edita su copia, ¿esos cambios pueden volver al dueño original, o son independientes a partir de ahí?
@@ -210,6 +210,14 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Tests**: el código caduca de verdad a los 3 minutos; los campos excluidos no viajan en ningún payload (no es un filtro de pantalla, es una exclusión real en el origen); dos receptores distintos no pueden usar el mismo código si se diseña como "un solo uso" (a confirmar en las preguntas abiertas).
 - **Riesgos**: es la fase con más decisiones de producto todavía sin cerrar de todo el plan — no empezar a programarla sin esas tres respuestas.
 - **Qué se podrá probar**: compartir un viaje real entre dos móviles por QR y comprobar en el receptor que solo llegó lo elegido.
+- **Decisiones (respondidas por el usuario 2026-10-05)**: (1) **copia puntual e independiente** — el receptor no sigue cambios del original; (2) un código vale para **todos los que lo usen dentro de los 3 minutos**; (3) los cambios del receptor **no vuelven** al dueño.
+- **Primer corte ✅ (2026-10-05, rama `fase-5-compartir`)** — web/PWA:
+  - "Share…" en el Overview del viaje → elegir qué va (reservas, nº de reserva [desactivado por defecto: dato sensible], precios, notas, tareas, fotos, personas; "Select all"); el itinerario (ciudades y días) va siempre. Lo excluido se quita **en origen**, antes de cifrar (`src/features/transfer/shareFilter.ts`, con tests).
+  - Cifrado extremo a extremo en el dispositivo (WebCrypto): código de 8 caracteres sin letras ambiguas; el servidor solo ve SHA-256 del código + el texto cifrado (AES-GCM con clave PBKDF2 del código, comprimido con gzip). Supabase es solo un buzón de 3 minutos: tabla `share_sessions` con RLS sin políticas + funciones `create_share`/`claim_share` (`supabase/migrations/20261005210000_share_sessions.sql`, probada en Postgres real vía PGlite), con límites de 8 MB por share y 50 shares vivos.
+  - QR con enlace directo a `/receive?code=…` (la cámara del móvil lo abre). Recibir también desde You → "Receive a shared trip" tecleando el código. Vista previa (quién lo comparte, ciudades, reservas, notas…) y "Add to my trips" crea una copia con IDs nuevos.
+  - Aviso en la pantalla de recibir: en iPhone la PWA instalada guarda sus datos aparte de Safari; si el QR abre Safari, hay que abrir la app instalada y teclear el código.
+  - **Pendiente de despliegue**: aplicar la migración en el proyecto Supabase real (no hay CLI/credenciales en esta máquina).
+  - Pospuesto: registro local de actividad de compartir; compartir/recibir en nativo (React Native no trae WebCrypto).
 
 ### Fase 6 — Gastos y organización 🚧 en marcha (2026-10-05)
 - **Objetivo**: control económico del viaje y seguimiento de lo hecho/pendiente.
