@@ -44,36 +44,57 @@ def vertical_gradient(size, top, bottom):
 
 
 def draw_plane(draw, cx, cy, scale, color):
-    """Single-silhouette calm commercial airliner (long nose, gentle swept
-    main wings, smaller tail wings, shallow tail notch) — not a fighter jet."""
+    """Clean dart/delta silhouette — simple nose + swept wings, no tail fins,
+    no fork. Matches a classic paper-plane / commercial-jet travel icon."""
     pts = [
         (0, -1.00),  # nose tip
-        (0.04, -0.60),  # right of nose
-        (0.90, 0.00),  # right main wingtip (barely swept — commercial, not delta)
-        (0.62, 0.15),  # right main wing trailing edge
-        (0.08, -0.05),  # back to fuselage
-        (0.08, 0.35),  # fuselage right, down to the tail section
-        (0.26, 0.48),  # right tail wingtip (small)
-        (0.16, 0.52),  # right tail wing trailing edge
-        (0.05, 0.42),  # back to fuselage near tail
-        (0.05, 0.58),  # fuselage end, right
-        (0, 0.50),  # shallow tail notch (gentle, not a deep fork)
-        (-0.05, 0.58),  # fuselage end, left
-        (-0.05, 0.42),
-        (-0.16, 0.52),  # left tail wing trailing edge
-        (-0.26, 0.48),  # left tail wingtip
-        (-0.08, 0.35),
-        (-0.08, -0.05),
-        (-0.62, 0.15),  # left main wing trailing edge
-        (-0.90, 0.00),  # left main wingtip
-        (-0.04, -0.60),
+        (0.08, -0.42),  # right fuselage base
+        (0.95, 0.32),  # right wingtip
+        (0.62, 0.40),  # right wing inner trailing edge
+        (0, 0.08),  # fuselage end (simple point, no fork)
+        (-0.62, 0.40),  # left wing inner trailing edge
+        (-0.95, 0.32),  # left wingtip
+        (-0.08, -0.42),  # left fuselage base
     ]
     draw.polygon(poly(cx, cy, scale, 0, pts), fill=color)
     return poly(cx, cy, scale, 0, pts)
 
 
-def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=True):
-    """scale=1 -> ring radius ~460px (fits a 1024 canvas with margin)."""
+def bezier(p0, p1, p2, t):
+    x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t**2 * p2[0]
+    y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t**2 * p2[1]
+    return (x, y)
+
+
+def draw_flame_swoosh(draw, start, control, end, width_start, color, n=28):
+    """A single tapered, curved swoosh (quadratic bezier centerline, width
+    tapering from width_start down to a point) — one continuous flame/banner
+    shape, not separate lines."""
+    centerline = [bezier(start, control, end, i / n) for i in range(n + 1)]
+    left_edge, right_edge = [], []
+    for i, pt in enumerate(centerline):
+        t = i / n
+        w = width_start * (1 - t) ** 1.3
+        if i < len(centerline) - 1:
+            nxt = centerline[i + 1]
+        else:
+            nxt = centerline[i - 1]
+            pt, nxt = nxt, pt
+        dx, dy = nxt[0] - pt[0], nxt[1] - pt[1]
+        length = math.hypot(dx, dy) or 1
+        px, py = -dy / length, dx / length
+        cxp, cyp = centerline[i]
+        left_edge.append((cxp + px * w / 2, cyp + py * w / 2))
+        right_edge.append((cxp - px * w / 2, cyp - py * w / 2))
+    polygon_pts = left_edge + list(reversed(right_edge))
+    draw.polygon(polygon_pts, fill=color)
+
+
+def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=True, swoosh_reach=1.0):
+    """scale=1 -> ring radius ~460px (fits a 1024 canvas with margin).
+    swoosh_reach <1 pulls the flame tail's tip in — used for the Android
+    adaptive-icon layers, whose circular safe zone is tighter than the
+    full icon.png (where breaking through the ring is intentional)."""
     s = scale
 
     if ring:
@@ -81,13 +102,22 @@ def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=T
         w = 26 * s
         draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=ring_color, width=int(w))
 
-    plane_scale = 300 * s
-    plane_cx, plane_cy = cx - 10 * s, cy - 95 * s
+    plane_scale = 320 * s
+    plane_cx, plane_cy = cx - 15 * s, cy - 130 * s
     plane_pts = draw_plane(draw, plane_cx, plane_cy, plane_scale, mark_color)
 
-    # --- Suitcase, overlapping the plane's tail slightly, lower-right ---
-    case_scale = 150 * s
-    case_cx, case_cy = cx + 90 * s, cy + 195 * s
+    # --- Big flame/swoosh trailing from the left wing, through the lower-left
+    # of the ring (one continuous tapered shape, not separate lines) ---
+    wing_tip = plane_pts[6]  # left wingtip, canvas coords
+    wing_in = plane_pts[5]  # left wing inner trailing edge
+    start = ((wing_tip[0] + wing_in[0]) / 2 - 10 * s, (wing_tip[1] + wing_in[1]) / 2 + 10 * s)
+    control = (cx - 430 * s * swoosh_reach, cy + 120 * s * swoosh_reach)
+    end = (cx - 330 * s * swoosh_reach, cy + 480 * s * swoosh_reach)
+    draw_flame_swoosh(draw, start, control, end, 150 * s, mark_color)
+
+    # --- Suitcase, overlapping the plane's body slightly, lower-right ---
+    case_scale = 155 * s
+    case_cx, case_cy = cx + 85 * s, cy + 90 * s
     body_w, body_h = 1.5 * case_scale, 1.05 * case_scale
     radius = 0.22 * case_scale
     draw.rounded_rectangle(
@@ -121,22 +151,6 @@ def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=T
         fill=accent_color,
     )
 
-    # --- Motion lines: three clean parallel strokes trailing the left wingtip ---
-    wing_tip = plane_pts[18]  # left main wingtip, already in canvas coords
-    direction = (-0.82, 0.42)  # down-left
-    perp = (-direction[1], direction[0])
-    for i, (length, width, col) in enumerate(
-        [
-            (175 * s, 28 * s, accent_color),
-            (130 * s, 20 * s, mark_color),
-            (85 * s, 13 * s, accent_color),
-        ]
-    ):
-        offset = (28 * s) * (i + 1)
-        start = (wing_tip[0] + perp[0] * offset * 0.3, wing_tip[1] + perp[1] * offset * 0.3 + 10 * s)
-        start = (start[0] - 10 * s * i, start[1] + 46 * s * i)
-        end = (start[0] + direction[0] * length, start[1] + direction[1] * length)
-        draw.line([start, end], fill=col, width=int(width))
 
 
 def save(img, path):
@@ -164,13 +178,13 @@ save(bg_img, f"{out}/android-icon-background.png")
 #    (the ring would double up visually with the adaptive-icon's own circular crop)
 fg_img = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
 d = ImageDraw.Draw(fg_img)
-draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, CREAM, CREAM, BRASS, ring=False)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, CREAM, CREAM, BRASS, ring=False, swoosh_reach=0.7)
 save(fg_img, f"{out}/android-icon-foreground.png")
 
 # 5) android-icon-monochrome.png — transparent, single-color white silhouette
 mono_img = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
 d = ImageDraw.Draw(mono_img)
-draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, WHITE, WHITE, WHITE, ring=False)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, WHITE, WHITE, WHITE, ring=False, swoosh_reach=0.7)
 save(mono_img, f"{out}/android-icon-monochrome.png")
 
 # 6) splash-icon.png — transparent, mark + ring, generously sized for "contain" mode
