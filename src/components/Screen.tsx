@@ -19,9 +19,15 @@ export function Screen({ children, scroll = false, style }: ScreenProps) {
       edges={['top']}
     >
       <Container
-        style={scroll ? undefined : [styles.content, { padding: theme.space.md }, style]}
+        style={
+          scroll
+            ? undefined
+            : [styles.content, { padding: theme.space.lg, gap: theme.space.lg }, style]
+        }
         contentContainerStyle={
-          scroll ? [styles.content, { padding: theme.space.md }, style] : undefined
+          scroll
+            ? [styles.content, { padding: theme.space.lg, gap: theme.space.lg }, style]
+            : undefined
         }
       >
         {children}
@@ -32,5 +38,5 @@ export function Screen({ children, scroll = false, style }: ScreenProps) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flex: 1, gap: 16 },
+  content: { flex: 1 },
 });

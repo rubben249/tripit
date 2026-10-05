@@ -61,9 +61,9 @@ export function BookingCard({
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
         flexDirection: 'row',
-        gap: theme.space.sm,
-        padding: theme.space.sm,
-        borderRadius: theme.radius.sm,
+        gap: theme.space.md,
+        padding: theme.space.md,
+        borderRadius: theme.radius.md,
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
@@ -71,36 +71,36 @@ export function BookingCard({
       })}
     >
       <View
-        style={{ width: 6, borderRadius: 3, alignSelf: 'stretch', backgroundColor: category.color }}
+        style={{ width: 7, borderRadius: 4, alignSelf: 'stretch', backgroundColor: category.color }}
       />
-      <Ionicons name={category.icon} size={18} color={category.color} style={{ marginTop: 2 }} />
-      <View style={{ flex: 1, gap: 2 }}>
+      <Ionicons name={category.icon} size={24} color={category.color} style={{ marginTop: 2 }} />
+      <View style={{ flex: 1, gap: 4 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text
-            style={[theme.type.title, { fontSize: 15, color: theme.colors.text, flexShrink: 1 }]}
+            style={[theme.type.title, { fontSize: 18, color: theme.colors.text, flexShrink: 1 }]}
           >
             {booking.title}
           </Text>
           {booking.price != null ? (
-            <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
+            <Text style={[theme.type.title, { fontSize: 16, color: theme.colors.textMuted }]}>
               {booking.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
               {booking.currency ?? defaultCurrency}
             </Text>
           ) : null}
         </View>
 
-        <Text style={[theme.type.caption, { color: theme.colors.accent }]}>
+        <Text style={[theme.type.caption, { fontSize: 13, color: theme.colors.accent }]}>
           {STATUS_LABEL[booking.status]}
         </Text>
 
         {transport ? (
           <>
             {transport.carrierNumber ? (
-              <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                 {transport.carrierNumber}
               </Text>
             ) : null}
-            <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+            <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
               {depTime ?? '—'} {transport.departureLocation ?? ''}
               {transport.departureTerminal ? ` (T${transport.departureTerminal})` : ''}
               {'  →  '}
@@ -112,19 +112,19 @@ export function BookingCard({
         ) : (
           <>
             {depTime || arrTime ? (
-              <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                 {booking.categoryKey === 'accommodation'
                   ? `${booking.startAt?.slice(0, 10) ?? ''} → ${booking.endAt?.slice(0, 10) ?? ''}`
                   : depTime}
               </Text>
             ) : null}
             {booking.locationName ? (
-              <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                 {booking.locationName}
               </Text>
             ) : null}
             {booking.address ? (
-              <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                 {booking.address}
               </Text>
             ) : null}
@@ -133,7 +133,10 @@ export function BookingCard({
 
         {booking.notes ? (
           <Text
-            style={[theme.type.caption, { color: theme.colors.textMuted, fontStyle: 'italic' }]}
+            style={[
+              theme.type.body,
+              { fontSize: 14, color: theme.colors.textMuted, fontStyle: 'italic' },
+            ]}
           >
             {booking.notes}
           </Text>

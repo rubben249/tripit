@@ -136,4 +136,15 @@ export const migrations: string[] = [
 
   create index idx_expense_splits_expense on expense_splits(expense_id);
   `,
+
+  // v5 — removes the standalone expenses/expense_splits concept entirely
+  // (user correction 2026-10-05: no per-person paid-by/split tracking, and
+  // every priced thing you spent on should be a booking tied to a day so it
+  // shows up in Itinerary — not a separate, day-less entity). A clean drop
+  // rather than leaving dead tables around, since this shipped only hours
+  // earlier with no real trip data depending on it.
+  `
+  drop table expense_splits;
+  drop table expenses;
+  `,
 ];

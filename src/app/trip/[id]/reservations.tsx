@@ -51,8 +51,8 @@ export default function ReservationsScreen() {
   return (
     <Screen scroll>
       {groups.map(({ category, bookings: categoryBookings }) => (
-        <View key={category.key} style={{ gap: theme.space.xs }}>
-          <Text style={[theme.type.title, { color: theme.colors.text }]}>
+        <View key={category.key} style={{ gap: theme.space.sm }}>
+          <Text style={[theme.type.headline, { fontSize: 22, color: theme.colors.text }]}>
             {category.label} ({categoryBookings.length})
           </Text>
           {categoryBookings.map((booking) => (

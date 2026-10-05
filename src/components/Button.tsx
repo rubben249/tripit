@@ -35,8 +35,8 @@ export function Button({
   const theme = useTheme();
   const { hovered, onHoverIn, onHoverOut } = useHoverable();
 
-  const paddingVertical = size === 'sm' ? 6 : theme.space.sm;
-  const paddingHorizontal = size === 'sm' ? theme.space.sm : theme.space.md;
+  const paddingVertical = size === 'sm' ? theme.space.xs : theme.space.md;
+  const paddingHorizontal = size === 'sm' ? theme.space.sm : theme.space.lg;
 
   const base: Record<
     Variant,
@@ -87,7 +87,7 @@ export function Button({
         <Text
           style={[
             size === 'sm' ? theme.type.caption : theme.type.data,
-            { color: palette.textColor },
+            { fontSize: size === 'sm' ? 13 : 15, color: palette.textColor },
           ]}
         >
           {children}

@@ -18,7 +18,7 @@ export function TextField({ style, name, ...props }: TextInputProps & { name?: s
           borderWidth: 1,
           borderRadius: theme.radius.sm,
           paddingHorizontal: theme.space.md,
-          paddingVertical: theme.space.sm,
+          paddingVertical: theme.space.md,
           backgroundColor: theme.colors.surface,
         },
         style,

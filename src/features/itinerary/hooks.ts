@@ -3,24 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addCity,
   createBooking,
-  createExpense,
   deleteBooking,
-  deleteExpense,
   listBookings,
   listCities,
-  listExpenses,
-  listExpenseSplits,
   listItineraryDays,
   updateBooking,
   type BookingUpdate,
 } from './api';
-import type { NewBookingInput, NewCityInput, NewExpenseInput } from './types';
+import type { NewBookingInput, NewCityInput } from './types';
 
 const citiesKey = (tripId: string) => ['trips', tripId, 'cities'] as const;
 const daysKey = (tripId: string) => ['trips', tripId, 'days'] as const;
 const bookingsKey = (tripId: string) => ['trips', tripId, 'bookings'] as const;
-const expensesKey = (tripId: string) => ['trips', tripId, 'expenses'] as const;
-const expenseSplitsKey = (tripId: string) => ['trips', tripId, 'expenseSplits'] as const;
 
 function invalidateTripItinerary(queryClient: ReturnType<typeof useQueryClient>, tripId: string) {
   queryClient.invalidateQueries({ queryKey: citiesKey(tripId) });
@@ -82,43 +76,5 @@ export function useDeleteBooking(tripId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteBooking(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: bookingsKey(tripId) }),
-  });
-}
-
-export function useExpenses(tripId: string) {
-  return useQuery({
-    queryKey: expensesKey(tripId),
-    queryFn: () => listExpenses(tripId),
-    enabled: !!tripId,
-  });
-}
-
-export function useExpenseSplits(tripId: string) {
-  return useQuery({
-    queryKey: expenseSplitsKey(tripId),
-    queryFn: () => listExpenseSplits(tripId),
-    enabled: !!tripId,
-  });
-}
-
-export function useCreateExpense(tripId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: NewExpenseInput) => createExpense(tripId, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: expensesKey(tripId) });
-      queryClient.invalidateQueries({ queryKey: expenseSplitsKey(tripId) });
-    },
-  });
-}
-
-export function useDeleteExpense(tripId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteExpense(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: expensesKey(tripId) });
-      queryClient.invalidateQueries({ queryKey: expenseSplitsKey(tripId) });
-    },
   });
 }

@@ -57,8 +57,8 @@ const DayRow = forwardRef<
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          gap: theme.space.sm,
-          padding: theme.space.md,
+          gap: theme.space.md,
+          padding: theme.space.lg,
           borderRadius: theme.radius.md,
           borderWidth: 1,
           borderColor: theme.colors.border,
@@ -67,26 +67,26 @@ const DayRow = forwardRef<
         })}
         {...pressableProps}
       >
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[theme.type.title, { color: theme.colors.text }]}>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
             Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
           </Text>
           {highlights.length === 0 ? (
-            <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+            <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
               Nothing planned yet
             </Text>
           ) : (
             highlights.map((h) => (
-              <View key={h.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={h.icon} size={13} color={h.color} />
-                <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+              <View key={h.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={h.icon} size={16} color={h.color} />
+                <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                   {h.text}
                 </Text>
               </View>
             ))
           )}
         </View>
-        <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
+        <Ionicons name="chevron-forward" size={22} color={theme.colors.textMuted} />
       </Pressable>
     </Link>
   );

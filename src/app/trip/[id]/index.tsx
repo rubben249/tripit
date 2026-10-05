@@ -121,28 +121,30 @@ export default function TripOverviewScreen() {
             Draft — add dates to start planning the itinerary.
           </Text>
         )}
-        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+        <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
           {cities?.length ?? 0} cities · {bookings?.length ?? 0} bookings · {trip.defaultCurrency}
         </Text>
         <TripCountdown trip={trip} color={theme.colors.accent} size="md" />
       </View>
 
-      <View style={{ gap: theme.space.sm }}>
-        <Text style={[theme.type.title, { color: theme.colors.text }]}>Cities</Text>
+      <View style={{ gap: theme.space.md }}>
+        <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>Cities</Text>
         {(cities ?? []).map((city) => (
           <View
             key={city.id}
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              paddingVertical: theme.space.sm,
+              paddingVertical: theme.space.md,
               borderBottomWidth: 1,
               borderBottomColor: theme.colors.border,
             }}
           >
-            <Text style={[theme.type.body, { color: theme.colors.text }]}>{city.name}</Text>
+            <Text style={[theme.type.title, { fontSize: 16, color: theme.colors.text }]}>
+              {city.name}
+            </Text>
             {city.arrivalDate && city.departureDate ? (
-              <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
                 {formatDateRange(city.arrivalDate, city.departureDate)}
               </Text>
             ) : null}

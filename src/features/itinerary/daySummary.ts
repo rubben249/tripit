@@ -54,6 +54,18 @@ export function getDayHighlights(day: ItineraryDay, bookings: Booking[]): DayHig
     }
   }
 
+  for (const b of bookings) {
+    if (b.dayId !== day.id) continue;
+    if (isTransportCategory(b.categoryKey) || b.categoryKey === 'accommodation') continue;
+    const category = bookingCategories[b.categoryKey];
+    highlights.push({
+      key: `o-${b.id}`,
+      icon: category.icon,
+      color: category.color,
+      text: b.title,
+    });
+  }
+
   return highlights;
 }
 

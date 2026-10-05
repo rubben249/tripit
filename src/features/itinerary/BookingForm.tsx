@@ -150,9 +150,9 @@ export function BookingForm({
   return (
     <View
       style={{
-        gap: theme.space.sm,
-        padding: theme.space.sm,
-        borderRadius: theme.radius.sm,
+        gap: theme.space.md,
+        padding: theme.space.md,
+        borderRadius: theme.radius.md,
         backgroundColor: theme.colors.surfaceAlt,
       }}
     >
@@ -389,8 +389,8 @@ function StatusChip({
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
-        paddingHorizontal: theme.space.sm,
-        paddingVertical: 6,
+        paddingHorizontal: theme.space.md,
+        paddingVertical: theme.space.xs,
         borderRadius: theme.radius.pill,
         backgroundColor: active ? theme.colors.steel : 'transparent',
         borderWidth: 1,
@@ -401,7 +401,7 @@ function StatusChip({
       <Text
         style={[
           theme.type.caption,
-          { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
+          { fontSize: 13, color: active ? theme.colors.onInk : theme.colors.textMuted },
         ]}
       >
         {label}
@@ -430,9 +430,9 @@ function CategoryChip({
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: theme.space.sm,
-        paddingVertical: 6,
+        gap: 6,
+        paddingHorizontal: theme.space.md,
+        paddingVertical: theme.space.xs,
         borderRadius: theme.radius.pill,
         backgroundColor: active ? category.color : 'transparent',
         borderWidth: 1,
@@ -442,13 +442,13 @@ function CategoryChip({
     >
       <Ionicons
         name={category.icon}
-        size={13}
+        size={16}
         color={active ? theme.colors.onInk : category.color}
       />
       <Text
         style={[
           theme.type.caption,
-          { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
+          { fontSize: 13, color: active ? theme.colors.onInk : theme.colors.textMuted },
         ]}
       >
         {category.label}

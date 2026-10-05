@@ -92,33 +92,3 @@ export const newBookingInputSchema = z.object({
   status: bookingStatusSchema.default('idea'),
 });
 export type NewBookingInput = z.infer<typeof newBookingInputSchema>;
-
-export const expenseSchema = z.object({
-  id: z.string(),
-  tripId: z.string(),
-  categoryKey: categoryKeySchema,
-  title: z.string().min(1),
-  amount: z.number(),
-  currency: z.string(),
-  paidByParticipantId: z.string().nullable(),
-  createdAt: z.string(),
-});
-export type Expense = z.infer<typeof expenseSchema>;
-
-export const newExpenseInputSchema = z.object({
-  categoryKey: categoryKeySchema,
-  title: z.string().min(1, 'Title is required'),
-  amount: z.number().positive(),
-  currency: z.string().min(1),
-  paidByParticipantId: z.string().nullable().optional(),
-  splitParticipantIds: z.array(z.string()).optional(),
-});
-export type NewExpenseInput = z.infer<typeof newExpenseInputSchema>;
-
-export const expenseSplitSchema = z.object({
-  id: z.string(),
-  expenseId: z.string(),
-  participantId: z.string(),
-  shareAmount: z.number(),
-});
-export type ExpenseSplit = z.infer<typeof expenseSplitSchema>;

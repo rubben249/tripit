@@ -34,7 +34,7 @@ export default function DayDetailScreen() {
         </Button>
       </Link>
 
-      <Text style={[theme.type.headline, { fontSize: 22, color: theme.colors.text }]}>
+      <Text style={[theme.type.headline, { color: theme.colors.text }]}>
         Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
       </Text>
 
@@ -43,7 +43,7 @@ export default function DayDetailScreen() {
           Nothing planned yet.
         </Text>
       ) : (
-        <View style={{ gap: theme.space.sm }}>
+        <View style={{ gap: theme.space.md }}>
           {dayBookings.map((booking) => (
             <BookingCard
               key={booking.id}

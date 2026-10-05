@@ -28,7 +28,11 @@ export default function TripLayout() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}
-        contentContainerStyle={{ paddingHorizontal: theme.space.md, gap: theme.space.md }}
+        contentContainerStyle={{
+          paddingHorizontal: theme.space.lg,
+          paddingVertical: theme.space.xs,
+          gap: theme.space.lg,
+        }}
       >
         {SECTIONS.map((section) => {
           const target = `/trip/${id}${section.href}`;
@@ -63,8 +67,8 @@ const TripTabLink = forwardRef<
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
-        paddingHorizontal: theme.space.sm,
-        paddingVertical: theme.space.xs,
+        paddingHorizontal: theme.space.md,
+        paddingVertical: theme.space.sm,
         borderRadius: theme.radius.sm,
         backgroundColor: active ? theme.colors.surfaceAlt : 'transparent',
         opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
@@ -72,7 +76,10 @@ const TripTabLink = forwardRef<
       {...pressableProps}
     >
       <Text
-        style={[theme.type.data, { color: active ? theme.colors.accent : theme.colors.textMuted }]}
+        style={[
+          theme.type.data,
+          { fontSize: 15, color: active ? theme.colors.accent : theme.colors.textMuted },
+        ]}
       >
         {label.toUpperCase()}
       </Text>
