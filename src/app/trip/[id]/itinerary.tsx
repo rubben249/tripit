@@ -8,11 +8,13 @@ import { formatDayLabel } from '@/lib/dates';
 import { AddBookingForm } from '@/features/itinerary/AddBookingForm';
 import { BookingRow } from '@/features/itinerary/BookingRow';
 import { useBookings, useItineraryDays } from '@/features/itinerary/hooks';
+import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function ItineraryScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: trip } = useTrip(id);
   const { data: days } = useItineraryDays(id);
   const { data: bookings } = useBookings(id);
   const [addingToDay, setAddingToDay] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export default function ItineraryScreen() {
                 dayId={day.id}
                 cityId={day.cityId}
                 date={day.date}
+                defaultCurrency={trip?.defaultCurrency ?? 'EUR'}
                 onDone={() => setAddingToDay(null)}
               />
             ) : (

@@ -20,12 +20,14 @@ export function AddBookingForm({
   dayId,
   cityId,
   date,
+  defaultCurrency,
   onDone,
 }: {
   tripId: string;
   dayId: string;
   cityId: string | null;
   date: string;
+  defaultCurrency: string;
   onDone: () => void;
 }) {
   const theme = useTheme();
@@ -33,21 +35,27 @@ export function AddBookingForm({
   const [categoryKey, setCategoryKey] = useState<CategoryKey>('sightseeing');
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
+  const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState(defaultCurrency);
 
   const onSave = async () => {
     const trimmed = title.trim();
     if (!trimmed) return;
     Keyboard.dismiss();
+    const parsedPrice = Number(price.replace(',', '.'));
     await createBooking.mutateAsync({
       dayId,
       cityId,
       categoryKey,
       title: trimmed,
       startAt: time.trim() ? `${date}T${time.trim()}:00` : undefined,
+      price: price.trim() && Number.isFinite(parsedPrice) ? parsedPrice : undefined,
+      currency: price.trim() ? currency.toUpperCase() || defaultCurrency : undefined,
       status: 'idea',
     });
     setTitle('');
     setTime('');
+    setPrice('');
     onDone();
   };
 
@@ -90,6 +98,28 @@ export function AddBookingForm({
             { width: 72, paddingHorizontal: theme.space.sm, paddingVertical: 8 },
           ]}
           name={`booking-time-${dayId}`}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: theme.space.xs }}>
+        <TextField
+          value={price}
+          onChangeText={setPrice}
+          placeholder="Price (optional)"
+          keyboardType="decimal-pad"
+          style={{ flex: 1, paddingHorizontal: theme.space.sm, paddingVertical: 8 }}
+          name={`booking-price-${dayId}`}
+        />
+        <TextField
+          value={currency}
+          onChangeText={(v) => setCurrency(v.toUpperCase())}
+          autoCapitalize="characters"
+          maxLength={3}
+          style={[
+            theme.type.data,
+            { width: 72, paddingHorizontal: theme.space.sm, paddingVertical: 8 },
+          ]}
+          name={`booking-currency-${dayId}`}
         />
       </View>
 

@@ -5,6 +5,7 @@ import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { getEffectiveStatus } from './status';
+import { TripCountdown } from './TripCountdown';
 import type { Trip } from './types';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -57,6 +58,7 @@ export function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void })
           {formatDateRange(trip.startDate, trip.endDate)}
         </Text>
       ) : null}
+      <TripCountdown trip={trip} color={isOngoing ? theme.colors.mist : theme.colors.textMuted} />
       <View
         style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.space.xs }}
       >

@@ -9,7 +9,9 @@ import { useTheme } from '@/theme/ThemeProvider';
 const SECTIONS = [
   { href: '', label: 'Overview' },
   { href: '/itinerary', label: 'Itinerary' },
+  { href: '/reservations', label: 'Reservations' },
   { href: '/people', label: 'People' },
+  { href: '/expenses', label: 'Expenses' },
 ] as const;
 
 export default function TripLayout() {

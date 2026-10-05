@@ -10,6 +10,7 @@ import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
 import { useTrashTrip, useTrip, useUpdateTrip } from '@/features/trips/hooks';
+import { TripCountdown } from '@/features/trips/TripCountdown';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TripOverviewScreen() {
@@ -123,6 +124,7 @@ export default function TripOverviewScreen() {
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
           {cities?.length ?? 0} cities · {bookings?.length ?? 0} bookings · {trip.defaultCurrency}
         </Text>
+        <TripCountdown trip={trip} color={theme.colors.accent} size="md" />
       </View>
 
       <View style={{ gap: theme.space.sm }}>
