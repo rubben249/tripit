@@ -2,8 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { bookingCategories, categoryKeys, type CategoryKey } from '@/features/bookings/categories';
+import {
+  bookingCategories,
+  categoryKeys,
+  type BookingCategory,
+  type CategoryKey,
+} from '@/features/bookings/categories';
+import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { useCreateBooking } from './hooks';
@@ -55,41 +62,14 @@ export function AddBookingForm({
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', gap: theme.space.xs }}>
-          {categoryKeys.map((key) => {
-            const category = bookingCategories[key];
-            const active = key === categoryKey;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => setCategoryKey(key)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingHorizontal: theme.space.sm,
-                  paddingVertical: 6,
-                  borderRadius: theme.radius.pill,
-                  backgroundColor: active ? category.color : 'transparent',
-                  borderWidth: 1,
-                  borderColor: active ? category.color : theme.colors.border,
-                }}
-              >
-                <Ionicons
-                  name={category.icon}
-                  size={13}
-                  color={active ? theme.colors.onInk : category.color}
-                />
-                <Text
-                  style={[
-                    theme.type.caption,
-                    { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
-                  ]}
-                >
-                  {category.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {categoryKeys.map((key) => (
+            <CategoryChip
+              key={key}
+              category={bookingCategories[key]}
+              active={key === categoryKey}
+              onPress={() => setCategoryKey(key)}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -113,21 +93,62 @@ export function AddBookingForm({
         />
       </View>
 
-      <Pressable
+      <Button
+        variant="primary"
+        size="sm"
+        fullWidth
         onPress={onSave}
         disabled={!title.trim() || createBooking.isPending}
-        style={{
-          backgroundColor: theme.colors.ink,
-          borderRadius: theme.radius.sm,
-          paddingVertical: 8,
-          alignItems: 'center',
-          opacity: !title.trim() || createBooking.isPending ? 0.6 : 1,
-        }}
       >
-        <Text style={[theme.type.caption, { color: theme.colors.onInk }]}>
-          {createBooking.isPending ? 'Adding…' : 'Add to this day'}
-        </Text>
-      </Pressable>
+        {createBooking.isPending ? 'Adding…' : 'Add to this day'}
+      </Button>
     </View>
+  );
+}
+
+function CategoryChip({
+  category,
+  active,
+  onPress,
+}: {
+  category: BookingCategory;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: theme.space.sm,
+        paddingVertical: 6,
+        borderRadius: theme.radius.pill,
+        backgroundColor: active ? category.color : 'transparent',
+        borderWidth: 1,
+        borderColor: active ? category.color : theme.colors.border,
+        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+      })}
+    >
+      <Ionicons
+        name={category.icon}
+        size={13}
+        color={active ? theme.colors.onInk : category.color}
+      />
+      <Text
+        style={[
+          theme.type.caption,
+          { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
+        ]}
+      >
+        {category.label}
+      </Text>
+    </Pressable>
   );
 }

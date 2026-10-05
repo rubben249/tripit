@@ -15,6 +15,8 @@ import {
   subMonths,
 } from 'date-fns';
 
+import { Button } from '@/components/Button';
+import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -49,6 +51,7 @@ export function DateField({
   name?: string;
 }) {
   const theme = useTheme();
+  const trigger = useHoverable();
   const [open, setOpen] = useState(false);
   const selected = value ? parseISO(value) : null;
   const min = minDate ? parseISO(minDate) : null;
@@ -65,14 +68,17 @@ export function DateField({
       <Pressable
         onPress={openPicker}
         nativeID={name}
-        style={{
+        onHoverIn={trigger.onHoverIn}
+        onHoverOut={trigger.onHoverOut}
+        style={({ pressed }) => ({
           borderColor: theme.colors.border,
           borderWidth: 1,
           borderRadius: theme.radius.sm,
           paddingHorizontal: theme.space.md,
           paddingVertical: theme.space.sm,
           backgroundColor: theme.colors.surface,
-        }}
+          opacity: pressed ? 0.75 : trigger.hovered ? 0.88 : 1,
+        })}
       >
         <Text
           style={[theme.type.body, { color: value ? theme.colors.text : theme.colors.textMuted }]}
@@ -86,6 +92,7 @@ export function DateField({
           style={{
             flex: 1,
             backgroundColor: 'rgba(14,22,38,0.5)',
+            alignItems: 'center',
             justifyContent: 'center',
             padding: theme.space.lg,
           }}
@@ -94,6 +101,8 @@ export function DateField({
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
+              width: '100%',
+              maxWidth: 360,
               backgroundColor: theme.colors.surface,
               borderRadius: theme.radius.lg,
               padding: theme.space.md,
@@ -109,21 +118,23 @@ export function DateField({
                 alignItems: 'center',
               }}
             >
-              <Pressable
+              <Button
+                variant="secondary"
+                size="sm"
                 onPress={() => setViewedMonth((m) => subMonths(m, 1))}
-                style={{ padding: theme.space.sm }}
               >
-                <Text style={[theme.type.body, { color: theme.colors.text }]}>‹</Text>
-              </Pressable>
+                ‹
+              </Button>
               <Text style={[theme.type.body, { color: theme.colors.text }]}>
                 {format(viewedMonth, 'MMMM yyyy')}
               </Text>
-              <Pressable
+              <Button
+                variant="secondary"
+                size="sm"
                 onPress={() => setViewedMonth((m) => addMonths(m, 1))}
-                style={{ padding: theme.space.sm }}
               >
-                <Text style={[theme.type.body, { color: theme.colors.text }]}>›</Text>
-              </Pressable>
+                ›
+              </Button>
             </View>
 
             <View style={{ flexDirection: 'row' }}>
@@ -132,7 +143,7 @@ export function DateField({
                   key={i}
                   style={[
                     theme.type.caption,
-                    { color: theme.colors.textMuted, width: 36, textAlign: 'center' },
+                    { color: theme.colors.textMuted, flex: 1, textAlign: 'center' },
                   ]}
                 >
                   {d}
@@ -147,56 +158,92 @@ export function DateField({
                   const inMonth = isSameMonth(day, viewedMonth);
                   const isSelected = !!selected && isSameDay(day, selected);
                   return (
-                    <Pressable
+                    <DayCell
                       key={day.toISOString()}
+                      day={day}
                       disabled={disabled}
+                      inMonth={inMonth}
+                      selected={isSelected}
                       onPress={() => {
                         onChange(format(day, 'yyyy-MM-dd'));
                         setOpen(false);
                       }}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: theme.radius.pill,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isSelected ? theme.colors.ink : 'transparent',
-                      }}
-                    >
-                      <Text
-                        style={[
-                          theme.type.data,
-                          {
-                            color: isSelected
-                              ? theme.colors.onInk
-                              : disabled || !inMonth
-                                ? theme.colors.border
-                                : theme.colors.text,
-                          },
-                        ]}
-                      >
-                        {format(day, 'd')}
-                      </Text>
-                    </Pressable>
+                    />
                   );
                 })}
               </View>
             ))}
 
             {value ? (
-              <Pressable
+              <Button
+                variant="dashed"
+                size="sm"
+                style={{ alignSelf: 'center', marginTop: theme.space.xs }}
                 onPress={() => {
                   onChange(null);
                   setOpen(false);
                 }}
-                style={{ paddingVertical: theme.space.sm, alignItems: 'center' }}
               >
-                <Text style={[theme.type.caption, { color: theme.colors.warn }]}>Clear date</Text>
-              </Pressable>
+                Clear date
+              </Button>
             ) : null}
           </Pressable>
         </Pressable>
       </Modal>
     </>
+  );
+}
+
+function DayCell({
+  day,
+  disabled,
+  inMonth,
+  selected,
+  onPress,
+}: {
+  day: Date;
+  disabled: boolean;
+  inMonth: boolean;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        flex: 1,
+        aspectRatio: 1,
+        borderRadius: theme.radius.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: selected
+          ? theme.colors.ink
+          : hovered && !disabled
+            ? theme.colors.surfaceAlt
+            : 'transparent',
+        opacity: pressed && !disabled ? 0.75 : 1,
+      })}
+    >
+      <Text
+        style={[
+          theme.type.data,
+          {
+            color: selected
+              ? theme.colors.onInk
+              : disabled || !inMonth
+                ? theme.colors.border
+                : theme.colors.text,
+          },
+        ]}
+      >
+        {format(day, 'd')}
+      </Text>
+    </Pressable>
   );
 }

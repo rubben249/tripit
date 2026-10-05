@@ -1,10 +1,12 @@
-import { Pressable, Text } from 'react-native';
+import { forwardRef } from 'react';
+import { Pressable, Text, View, type PressableProps } from 'react-native';
 import { Link } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { env } from '@/config/env';
 import { useTrashedTrips } from '@/features/trips/hooks';
+import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SettingsScreen() {
@@ -20,20 +22,7 @@ export default function SettingsScreen() {
       </Text>
 
       <Link href="/trash" asChild>
-        <Pressable
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingVertical: theme.space.sm,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border,
-          }}
-        >
-          <Text style={[theme.type.body, { color: theme.colors.text }]}>Trash</Text>
-          <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
-            {trashedTrips?.length ?? 0}
-          </Text>
-        </Pressable>
+        <SettingsRow label="Trash" value={trashedTrips?.length ?? 0} />
       </Link>
 
       <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
@@ -42,3 +31,35 @@ export default function SettingsScreen() {
     </Screen>
   );
 }
+
+const SettingsRow = forwardRef<
+  View,
+  Omit<PressableProps, 'style'> & { label: string; value: number }
+>(function SettingsRow({ label, value, ...pressableProps }, ref) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+
+  return (
+    <Pressable
+      ref={ref}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: theme.space.md,
+        paddingVertical: theme.space.sm,
+        borderRadius: theme.radius.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+      })}
+      {...pressableProps}
+    >
+      <Text style={[theme.type.body, { color: theme.colors.text }]}>{label}</Text>
+      <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>{value}</Text>
+    </Pressable>
+  );
+});

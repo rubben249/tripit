@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Keyboard, Pressable, Text, View } from 'react-native';
+import { Keyboard, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
+import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -96,21 +97,14 @@ export default function NewTripScreen() {
         <Text style={[theme.type.caption, { color: theme.colors.warn }]}>{error}</Text>
       ) : null}
 
-      <Pressable
+      <Button
+        variant="primary"
+        fullWidth
         onPress={onCreate}
         disabled={!name.trim() || createTrip.isPending}
-        style={{
-          backgroundColor: theme.colors.ink,
-          borderRadius: theme.radius.sm,
-          paddingVertical: theme.space.sm,
-          alignItems: 'center',
-          opacity: !name.trim() || createTrip.isPending ? 0.6 : 1,
-        }}
       >
-        <Text style={[theme.type.title, { color: theme.colors.onInk }]}>
-          {createTrip.isPending ? 'Creating…' : 'Create trip'}
-        </Text>
-      </Pressable>
+        {createTrip.isPending ? 'Creating…' : 'Create trip'}
+      </Button>
     </Screen>
   );
 }

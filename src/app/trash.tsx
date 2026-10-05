@@ -1,5 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { usePermanentlyDeleteTrip, useRestoreTrip, useTrashedTrips } from '@/features/trips/hooks';
@@ -10,6 +12,16 @@ export default function TrashScreen() {
   const { data: trips } = useTrashedTrips();
   const restoreTrip = useRestoreTrip();
   const permanentlyDeleteTrip = usePermanentlyDeleteTrip();
+  const { confirm, dialog } = useConfirm();
+
+  const onDeleteForever = async (id: string, name: string) => {
+    const confirmed = await confirm({
+      title: 'Delete forever?',
+      message: `"${name}" and everything in it will be permanently deleted. This cannot be undone.`,
+      confirmLabel: 'Delete forever',
+    });
+    if (confirmed) permanentlyDeleteTrip.mutate(id);
+  };
 
   return (
     <Screen scroll>
@@ -33,20 +45,26 @@ export default function TrashScreen() {
               borderBottomColor: theme.colors.border,
             }}
           >
-            <Text style={[theme.type.body, { color: theme.colors.text }]}>{trip.name}</Text>
-            <View style={{ flexDirection: 'row', gap: theme.space.md }}>
-              <Pressable onPress={() => restoreTrip.mutate(trip.id)}>
-                <Text style={[theme.type.caption, { color: theme.colors.good }]}>Restore</Text>
-              </Pressable>
-              <Pressable onPress={() => permanentlyDeleteTrip.mutate(trip.id)}>
-                <Text style={[theme.type.caption, { color: theme.colors.warn }]}>
-                  Delete forever
-                </Text>
-              </Pressable>
+            <Text style={[theme.type.body, { color: theme.colors.text, flex: 1 }]}>
+              {trip.name}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
+              <Button variant="secondary" size="sm" onPress={() => restoreTrip.mutate(trip.id)}>
+                Restore
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onPress={() => onDeleteForever(trip.id, trip.name)}
+              >
+                Delete forever
+              </Button>
             </View>
           </View>
         ))
       )}
+
+      {dialog}
     </Screen>
   );
 }

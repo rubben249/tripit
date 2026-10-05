@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { formatDayLabel } from '@/lib/dates';
 import { AddBookingForm } from '@/features/itinerary/AddBookingForm';
@@ -57,9 +58,9 @@ export default function ItineraryScreen() {
                 onDone={() => setAddingToDay(null)}
               />
             ) : (
-              <Pressable onPress={() => setAddingToDay(day.id)}>
-                <Text style={[theme.type.caption, { color: theme.colors.accent }]}>+ Add</Text>
-              </Pressable>
+              <Button variant="dashed" size="sm" onPress={() => setAddingToDay(day.id)}>
+                + Add
+              </Button>
             )}
           </View>
         );

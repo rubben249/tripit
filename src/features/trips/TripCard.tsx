@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { formatDateRange } from '@/lib/dates';
+import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { getEffectiveStatus } from './status';
@@ -18,10 +19,13 @@ export function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void })
   const theme = useTheme();
   const effectiveStatus = getEffectiveStatus(trip);
   const isOngoing = effectiveStatus === 'ongoing';
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
 
   return (
     <Pressable
       onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
       style={({ pressed }) => [
         {
           backgroundColor: isOngoing ? theme.colors.ink : theme.colors.surface,
@@ -30,7 +34,7 @@ export function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void })
           borderColor: theme.colors.border,
           padding: theme.space.md,
           gap: theme.space.xs,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? 0.85 : hovered ? 0.92 : 1,
         },
       ]}
     >

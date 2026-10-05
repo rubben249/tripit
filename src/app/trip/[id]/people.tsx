@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import { Button } from '@/components/Button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAddParticipant, useParticipants, useRemoveParticipant } from '@/features/trips/hooks';
@@ -13,6 +15,7 @@ export default function PeopleScreen() {
   const { data: participants } = useParticipants(id);
   const addParticipant = useAddParticipant(id);
   const removeParticipant = useRemoveParticipant(id);
+  const { confirm, dialog } = useConfirm();
   const [name, setName] = useState('');
 
   const onAdd = async () => {
@@ -20,6 +23,15 @@ export default function PeopleScreen() {
     if (!trimmed) return;
     setName('');
     await addParticipant.mutateAsync(trimmed);
+  };
+
+  const onRemove = async (id: string, displayName: string) => {
+    const confirmed = await confirm({
+      title: 'Remove this person?',
+      message: `"${displayName}" will no longer be listed on this trip.`,
+      confirmLabel: 'Remove',
+    });
+    if (confirmed) removeParticipant.mutate(id);
   };
 
   return (
@@ -42,9 +54,9 @@ export default function PeopleScreen() {
           }}
         >
           <Text style={[theme.type.body, { color: theme.colors.text }]}>{p.displayName}</Text>
-          <Pressable onPress={() => removeParticipant.mutate(p.id)}>
-            <Text style={[theme.type.caption, { color: theme.colors.warn }]}>Remove</Text>
-          </Pressable>
+          <Button variant="danger" size="sm" onPress={() => onRemove(p.id, p.displayName)}>
+            Remove
+          </Button>
         </View>
       ))}
 
@@ -57,18 +69,12 @@ export default function PeopleScreen() {
           style={{ flex: 1 }}
           name="participant-name"
         />
-        <Pressable
-          onPress={onAdd}
-          style={{
-            justifyContent: 'center',
-            paddingHorizontal: theme.space.md,
-            borderRadius: theme.radius.sm,
-            backgroundColor: theme.colors.ink,
-          }}
-        >
-          <Text style={[theme.type.data, { color: theme.colors.onInk }]}>Add</Text>
-        </Pressable>
+        <Button variant="primary" onPress={onAdd}>
+          Add
+        </Button>
       </View>
+
+      {dialog}
     </Screen>
   );
 }

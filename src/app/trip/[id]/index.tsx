@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Keyboard, Pressable, Text, View } from 'react-native';
+import { Keyboard, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { Button } from '@/components/Button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
-import { useTrashTrip, useTrip } from '@/features/trips/hooks';
+import { useTrashTrip, useTrip, useUpdateTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TripOverviewScreen() {
@@ -19,9 +21,13 @@ export default function TripOverviewScreen() {
   const { data: bookings } = useBookings(id);
   const addCity = useAddCity(id);
   const trashTrip = useTrashTrip();
+  const updateTrip = useUpdateTrip(id);
+  const { confirm, dialog } = useConfirm();
   const [newCity, setNewCity] = useState('');
   const [arrivalDate, setArrivalDate] = useState<string | null>(null);
   const [departureDate, setDepartureDate] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
   if (!trip) return null;
 
@@ -41,13 +47,68 @@ export default function TripOverviewScreen() {
     });
   };
 
+  const onStartRename = () => {
+    setDraftName(trip.name);
+    setEditingName(true);
+  };
+
+  const onSaveRename = async () => {
+    const name = draftName.trim();
+    Keyboard.dismiss();
+    if (name && name !== trip.name) {
+      await updateTrip.mutateAsync({ name });
+    }
+    setEditingName(false);
+  };
+
   const onDeleteTrip = async () => {
+    const confirmed = await confirm({
+      title: 'Delete this trip?',
+      message: `"${trip.name}" moves to Trash and can be restored within 30 days.`,
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
     await trashTrip.mutateAsync(id);
     router.replace('/');
   };
 
   return (
     <Screen scroll>
+      {editingName ? (
+        <View style={{ flexDirection: 'row', gap: theme.space.sm, alignItems: 'center' }}>
+          <TextField
+            value={draftName}
+            onChangeText={setDraftName}
+            onSubmitEditing={onSaveRename}
+            autoFocus
+            style={{ flex: 1 }}
+            name="trip-rename"
+          />
+          <Button variant="primary" size="sm" onPress={onSaveRename}>
+            Save
+          </Button>
+          <Button variant="secondary" size="sm" onPress={() => setEditingName(false)}>
+            Cancel
+          </Button>
+        </View>
+      ) : (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: theme.space.sm,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Text style={[theme.type.headline, { color: theme.colors.text, flexShrink: 1 }]}>
+            {trip.name}
+          </Text>
+          <Button variant="secondary" size="sm" onPress={onStartRename}>
+            Rename
+          </Button>
+        </View>
+      )}
+
       <View style={{ gap: theme.space.xs }}>
         {trip.startDate && trip.endDate ? (
           <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
@@ -95,17 +156,9 @@ export default function TripOverviewScreen() {
               style={{ flex: 1 }}
               name="new-city-name"
             />
-            <Pressable
-              onPress={onAddCity}
-              style={{
-                justifyContent: 'center',
-                paddingHorizontal: theme.space.md,
-                borderRadius: theme.radius.sm,
-                backgroundColor: theme.colors.ink,
-              }}
-            >
-              <Text style={[theme.type.data, { color: theme.colors.onInk }]}>Add</Text>
-            </Pressable>
+            <Button variant="primary" onPress={onAddCity}>
+              Add
+            </Button>
           </View>
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
             <View style={{ flex: 1 }}>
@@ -137,9 +190,11 @@ export default function TripOverviewScreen() {
         </View>
       </View>
 
-      <Pressable onPress={onDeleteTrip} style={{ paddingVertical: theme.space.md }}>
-        <Text style={[theme.type.caption, { color: theme.colors.warn }]}>Delete trip</Text>
-      </Pressable>
+      <Button variant="danger" onPress={onDeleteTrip} style={{ marginTop: theme.space.md }}>
+        Delete trip
+      </Button>
+
+      {dialog}
     </Screen>
   );
 }
