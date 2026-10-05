@@ -15,8 +15,10 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.rubben249.tripit',
   },
   android: {
+    package: 'com.rubben249.tripit',
     adaptiveIcon: {
       backgroundColor: paperLight,
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -46,6 +48,11 @@ const config: ExpoConfig = {
   ],
   experiments: {
     typedRoutes: true,
+  },
+  extra: {
+    eas: {
+      projectId: 'b0b548f4-b172-4b89-abbf-e20d7c676a2e',
+    },
   },
 };
 
