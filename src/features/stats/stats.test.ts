@@ -1,8 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { countryFlag } from '@/lib/countries';
 import { makeTrip } from '@/test/factories';
 
-import { computeStats, countryFlag } from './stats';
+import { computeStats } from './stats';
 
 const now = new Date(2026, 9, 5, 12, 0);
 const past = makeTrip({ id: 'past', startDate: '2026-08-01', endDate: '2026-08-05' });

@@ -5,3 +5,4 @@ web-build
 .tools
 docs
 *.md
+src/features/map/countries-110m.json

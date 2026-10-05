@@ -70,6 +70,54 @@ const dark: ThemeColors = {
 
 export const palettes: Record<ColorScheme, ThemeColors> = { light, dark };
 
+/** World map (Map tab) colors, kept in the Atlas Umber family. The base map comes from
+ * OpenFreeMap; land and water are repainted with these so it matches the app, and trip
+ * countries/cities are drawn on top. */
+export interface MapColors {
+  /** OpenFreeMap style to start from — a quiet, label-light base in each scheme. */
+  style: string;
+  land: string;
+  water: string;
+  /** Space around the globe. */
+  space: string;
+  /** Soft halo hugging the globe's edge at world zoom. */
+  atmosphere: string;
+  /** Countries with a trip already taken or in progress. */
+  traveled: string;
+  /** Countries with a trip still ahead (upcoming or draft). */
+  planned: string;
+  countryOutline: string;
+  city: string;
+  cityHalo: string;
+}
+
+export const mapPalettes: Record<ColorScheme, MapColors> = {
+  light: {
+    style: 'https://tiles.openfreemap.org/styles/positron',
+    land: '#F3EADB',
+    water: '#D7C6AA',
+    space: light.background,
+    atmosphere: '#E8D3B0',
+    traveled: brand.accent,
+    planned: '#D4A86E',
+    countryOutline: '#8A5A34',
+    city: brand.ink,
+    cityHalo: '#FFFBF4',
+  },
+  dark: {
+    style: 'https://tiles.openfreemap.org/styles/dark',
+    land: '#2A2017',
+    water: '#120D08',
+    space: dark.background,
+    atmosphere: '#6B4A33',
+    traveled: '#C99455',
+    planned: '#7A5A36',
+    countryOutline: '#E0B57E',
+    city: '#EFE6D8',
+    cityHalo: '#17110B',
+  },
+};
+
 /** Keys expo-font is given when loading — use these in `fontFamily`, never a raw string. */
 export const fontFamily = {
   display: 'Fraunces-SemiBold',

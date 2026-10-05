@@ -9,7 +9,11 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { isReservationCategory } from '@/features/bookings/categories';
+import { CityPlaceField } from '@/features/itinerary/CityPlaceField';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
+import { locateCity } from '@/features/map/geocodeCities';
+import { countryFlag } from '@/lib/countries';
+import type { Place } from '@/lib/geocoding';
 import { useTrashTrip, useTrip, useUpdateTrip } from '@/features/trips/hooks';
 import { TripCountdown } from '@/features/trips/TripCountdown';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -29,6 +33,7 @@ export default function TripOverviewScreen() {
   const updateTrip = useUpdateTrip(id);
   const { confirm, dialog } = useConfirm();
   const [newCity, setNewCity] = useState('');
+  const [newCityPlace, setNewCityPlace] = useState<Place | null>(null);
   const [arrivalDate, setArrivalDate] = useState<string | null>(null);
   const [departureDate, setDepartureDate] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -43,10 +48,18 @@ export default function TripOverviewScreen() {
     setNewCity('');
     const arrival = arrivalDate;
     const departure = departureDate;
+    const chosen = newCityPlace;
+    setNewCityPlace(null);
     setArrivalDate(null);
     setDepartureDate(null);
+    // No suggestion picked: fall back to the top search result. Offline or no match → saved
+    // without coordinates; the Map tab fills them in later.
+    const place = chosen ?? (await locateCity(name));
     await addCity.mutateAsync({
       name,
+      countryCode: place?.countryCode ?? undefined,
+      lat: place?.lat,
+      lng: place?.lng,
       arrivalDate: arrival ?? undefined,
       departureDate: departure ?? undefined,
     });
@@ -145,6 +158,7 @@ export default function TripOverviewScreen() {
             }}
           >
             <Text style={[theme.type.title, { fontSize: 16, color: theme.colors.text }]}>
+              {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
               {city.name}
             </Text>
             {city.arrivalDate && city.departureDate ? (
@@ -157,12 +171,11 @@ export default function TripOverviewScreen() {
 
         <View style={{ gap: theme.space.sm }}>
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-            <TextField
+            <CityPlaceField
               value={newCity}
               onChangeText={setNewCity}
-              placeholder="Add a city…"
-              style={{ flex: 1 }}
-              name="new-city-name"
+              selected={newCityPlace}
+              onSelect={setNewCityPlace}
             />
             <Button variant="primary" onPress={onAddCity}>
               Add

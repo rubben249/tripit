@@ -18,6 +18,8 @@ export type City = z.infer<typeof citySchema>;
 export const newCityInputSchema = z.object({
   name: z.string().min(1),
   countryCode: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   arrivalDate: z.string().optional(),
   departureDate: z.string().optional(),
 });

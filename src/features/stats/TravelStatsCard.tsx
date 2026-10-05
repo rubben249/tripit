@@ -11,7 +11,9 @@ import { plural } from '@/lib/plural';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { loadStatsData } from './api';
-import { computeStats, countryFlag, countryName } from './stats';
+import { countryFlag, countryName } from '@/lib/countries';
+
+import { computeStats } from './stats';
 
 /** "Travel passport": where you've been and how much you've traveled, from trips already taken. */
 export function TravelStatsCard() {

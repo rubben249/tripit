@@ -51,12 +51,14 @@ export async function addCity(tripId: string, input: NewCityInput): Promise<City
   const orderIndex = countRow?.n ?? 0;
 
   await db.runAsync(
-    `insert into cities (id, trip_id, name, country_code, arrival_date, departure_date, order_index)
-     values (?, ?, ?, ?, ?, ?, ?)`,
+    `insert into cities (id, trip_id, name, country_code, lat, lng, arrival_date, departure_date, order_index)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     tripId,
     input.name,
     input.countryCode ?? null,
+    input.lat ?? null,
+    input.lng ?? null,
     input.arrivalDate ?? null,
     input.departureDate ?? null,
     orderIndex,
@@ -70,6 +72,41 @@ export async function addCity(tripId: string, input: NewCityInput): Promise<City
   const created = cities.find((c) => c.id === id);
   if (!created) throw new Error('Failed to create city');
   return created;
+}
+
+export async function setCityLocation(
+  id: string,
+  location: { lat: number; lng: number; countryCode: string | null },
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'update cities set lat = ?, lng = ?, country_code = ? where id = ?',
+    location.lat,
+    location.lng,
+    location.countryCode,
+    id,
+  );
+}
+
+/** Cities (of trips not in the trash) that have no coordinates yet — added before geocoding
+ * existed, or while offline. */
+export async function listCitiesWithoutLocation(): Promise<City[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<CityRow>(
+    `select c.* from cities c join trips t on t.id = c.trip_id
+     where t.deleted_at is null and (c.lat is null or c.lng is null)`,
+  );
+  return rows.map(rowToCity);
+}
+
+/** Every city of every trip not in the trash — for the world map. */
+export async function listAllCities(): Promise<City[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<CityRow>(
+    `select c.* from cities c join trips t on t.id = c.trip_id
+     where t.deleted_at is null order by c.trip_id, c.order_index`,
+  );
+  return rows.map(rowToCity);
 }
 
 // --- Itinerary days -----------------------------------------------------

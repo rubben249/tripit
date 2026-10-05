@@ -5,17 +5,20 @@ import { useSettings } from '@/features/settings/hooks';
 
 import {
   palettes,
+  mapPalettes,
   space,
   radius,
   type,
   fontFamily,
   type ColorScheme,
   type ThemeColors,
+  type MapColors,
 } from './tokens';
 
 interface Theme {
   scheme: ColorScheme;
   colors: ThemeColors;
+  map: MapColors;
   space: typeof space;
   radius: typeof radius;
   type: typeof type;
@@ -34,6 +37,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
     () => ({
       scheme,
       colors: palettes[scheme],
+      map: mapPalettes[scheme],
       space,
       radius,
       type,
