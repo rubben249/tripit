@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
+import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
 import { useTrip } from '@/features/trips/hooks';
@@ -78,12 +79,11 @@ export default function TripOverviewScreen() {
 
         <View style={{ gap: theme.space.sm }}>
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-            <TextInput
+            <TextField
               value={newCity}
               onChangeText={setNewCity}
               placeholder="Add a city…"
-              placeholderTextColor={theme.colors.textMuted}
-              style={[cityInputStyle(theme), { flex: 1 }]}
+              style={{ flex: 1 }}
             />
             <Pressable
               onPress={onAddCity}
@@ -98,20 +98,18 @@ export default function TripOverviewScreen() {
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-            <TextInput
+            <TextField
               value={arrivalDate}
               onChangeText={setArrivalDate}
               placeholder="Arrival YYYY-MM-DD"
-              placeholderTextColor={theme.colors.textMuted}
-              style={[cityInputStyle(theme), { flex: 1 }]}
+              style={{ flex: 1 }}
               onSubmitEditing={onAddCity}
             />
-            <TextInput
+            <TextField
               value={departureDate}
               onChangeText={setDepartureDate}
               placeholder="Departure YYYY-MM-DD"
-              placeholderTextColor={theme.colors.textMuted}
-              style={[cityInputStyle(theme), { flex: 1 }]}
+              style={{ flex: 1 }}
               onSubmitEditing={onAddCity}
             />
           </View>
@@ -122,19 +120,4 @@ export default function TripOverviewScreen() {
       </View>
     </Screen>
   );
-}
-
-function cityInputStyle(theme: ReturnType<typeof useTheme>) {
-  return [
-    theme.type.body,
-    {
-      color: theme.colors.text,
-      borderColor: theme.colors.border,
-      borderWidth: 1,
-      borderRadius: theme.radius.sm,
-      paddingHorizontal: theme.space.md,
-      paddingVertical: theme.space.sm,
-      backgroundColor: theme.colors.surface,
-    },
-  ];
 }

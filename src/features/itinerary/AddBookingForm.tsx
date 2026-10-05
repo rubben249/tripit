@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { TextField } from '@/components/TextField';
 import { bookingCategories, categoryKeys, type CategoryKey } from '@/features/bookings/categories';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -89,42 +90,19 @@ export function AddBookingForm({
       </ScrollView>
 
       <View style={{ flexDirection: 'row', gap: theme.space.xs }}>
-        <TextInput
+        <TextField
           value={title}
           onChangeText={setTitle}
           placeholder="What is it?"
-          placeholderTextColor={theme.colors.textMuted}
-          style={[
-            theme.type.body,
-            {
-              flex: 1,
-              color: theme.colors.text,
-              borderColor: theme.colors.border,
-              borderWidth: 1,
-              borderRadius: theme.radius.sm,
-              paddingHorizontal: theme.space.sm,
-              paddingVertical: 8,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
+          style={{ flex: 1, paddingHorizontal: theme.space.sm, paddingVertical: 8 }}
         />
-        <TextInput
+        <TextField
           value={time}
           onChangeText={setTime}
           placeholder="09:00"
-          placeholderTextColor={theme.colors.textMuted}
           style={[
             theme.type.data,
-            {
-              width: 72,
-              color: theme.colors.text,
-              borderColor: theme.colors.border,
-              borderWidth: 1,
-              borderRadius: theme.radius.sm,
-              paddingHorizontal: theme.space.sm,
-              paddingVertical: 8,
-              backgroundColor: theme.colors.surface,
-            },
+            { width: 72, paddingHorizontal: theme.space.sm, paddingVertical: 8 },
           ]}
         />
       </View>

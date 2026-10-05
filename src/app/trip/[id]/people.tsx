@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
+import { TextField } from '@/components/TextField';
 import { useAddParticipant, useParticipants, useRemoveParticipant } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -48,25 +49,12 @@ export default function PeopleScreen() {
       ))}
 
       <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-        <TextInput
+        <TextField
           value={name}
           onChangeText={setName}
           placeholder="Add a name…"
-          placeholderTextColor={theme.colors.textMuted}
           onSubmitEditing={onAdd}
-          style={[
-            theme.type.body,
-            {
-              flex: 1,
-              color: theme.colors.text,
-              borderColor: theme.colors.border,
-              borderWidth: 1,
-              borderRadius: theme.radius.sm,
-              paddingHorizontal: theme.space.md,
-              paddingVertical: theme.space.sm,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
+          style={{ flex: 1 }}
         />
         <Pressable
           onPress={onAdd}

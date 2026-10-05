@@ -94,13 +94,19 @@ function rowToDay(row: DayRow): ItineraryDay {
   };
 }
 
+/**
+ * `day_index` is recomputed here from chronological order rather than trusted
+ * from storage: cities can be added out of date order (e.g. a later city
+ * added before an earlier one), so the insertion-order value written by
+ * ensureItineraryDays below cannot be relied on for display/ordering.
+ */
 export async function listItineraryDays(tripId: string): Promise<ItineraryDay[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<DayRow>(
-    'select * from itinerary_days where trip_id = ? order by day_index asc',
+    'select * from itinerary_days where trip_id = ? order by date asc',
     tripId,
   );
-  return rows.map(rowToDay);
+  return rows.map((row, index) => ({ ...rowToDay(row), dayIndex: index }));
 }
 
 /** Creates one itinerary_days row per date in range that doesn't already exist, linked to the given city. */
@@ -117,23 +123,18 @@ export async function ensureItineraryDays(
     tripId,
   );
   const existingDates = new Set(existing.map((r) => r.date));
-  const countRow = await db.getFirstAsync<{ n: number }>(
-    'select count(*) as n from itinerary_days where trip_id = ?',
-    tripId,
-  );
-  let nextIndex = countRow?.n ?? 0;
 
   for (const date of dates) {
     if (existingDates.has(date)) continue;
+    // day_index here is just a placeholder — listItineraryDays recomputes it
+    // from sorted dates on every read, since insertion order isn't reliable.
     await db.runAsync(
-      'insert into itinerary_days (id, trip_id, city_id, date, day_index) values (?, ?, ?, ?, ?)',
+      'insert into itinerary_days (id, trip_id, city_id, date, day_index) values (?, ?, ?, ?, 0)',
       generateId(),
       tripId,
       cityId,
       date,
-      nextIndex,
     );
-    nextIndex += 1;
   }
 }
 

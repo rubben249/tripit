@@ -1,27 +1,13 @@
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { TextField } from '@/components/TextField';
 import { env } from '@/config/env';
 import { useCreateTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
-
-function inputStyle(theme: ReturnType<typeof useTheme>) {
-  return [
-    theme.type.body,
-    {
-      color: theme.colors.text,
-      borderColor: theme.colors.border,
-      borderWidth: 1,
-      borderRadius: theme.radius.sm,
-      paddingHorizontal: theme.space.md,
-      paddingVertical: theme.space.sm,
-      backgroundColor: theme.colors.surface,
-    },
-  ];
-}
 
 export default function NewTripScreen() {
   const theme = useTheme();
@@ -56,35 +42,17 @@ export default function NewTripScreen() {
 
       <View style={{ gap: theme.space.xs }}>
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>NAME</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Italy, summer 2026…"
-          placeholderTextColor={theme.colors.textMuted}
-          style={inputStyle(theme)}
-        />
+        <TextField value={name} onChangeText={setName} placeholder="Italy, summer 2026…" />
       </View>
 
       <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
         <View style={{ flex: 1, gap: theme.space.xs }}>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>START DATE</Text>
-          <TextInput
-            value={startDate}
-            onChangeText={setStartDate}
-            placeholder="2026-08-28"
-            placeholderTextColor={theme.colors.textMuted}
-            style={inputStyle(theme)}
-          />
+          <TextField value={startDate} onChangeText={setStartDate} placeholder="2026-08-28" />
         </View>
         <View style={{ flex: 1, gap: theme.space.xs }}>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>END DATE</Text>
-          <TextInput
-            value={endDate}
-            onChangeText={setEndDate}
-            placeholder="2026-09-03"
-            placeholderTextColor={theme.colors.textMuted}
-            style={inputStyle(theme)}
-          />
+          <TextField value={endDate} onChangeText={setEndDate} placeholder="2026-09-03" />
         </View>
       </View>
       <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
@@ -93,14 +61,12 @@ export default function NewTripScreen() {
 
       <View style={{ gap: theme.space.xs }}>
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>CURRENCY</Text>
-        <TextInput
+        <TextField
           value={currency}
           onChangeText={setCurrency}
           placeholder="EUR"
-          placeholderTextColor={theme.colors.textMuted}
           autoCapitalize="characters"
           maxLength={3}
-          style={inputStyle(theme)}
         />
       </View>
 
