@@ -4,6 +4,8 @@ import { Pressable, Text, View } from 'react-native';
 
 import { getCategory } from '@/features/bookings/categories';
 import { asTransportDetails, isTransportCategory } from '@/features/bookings/details';
+import { useSetSeen } from '@/features/places/hooks';
+import { PlaceBadge } from '@/features/places/PlaceBadge';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -20,12 +22,17 @@ export function BookingCard({
   booking,
   tripId,
   defaultCurrency,
+  placeNumber,
 }: {
   booking: Booking;
   tripId: string;
   defaultCurrency: string;
+  /** Its number among the trip's booked places (as on the map), if it is one. */
+  placeNumber?: number;
 }) {
   const theme = useTheme();
+  const setSeen = useSetSeen(tripId);
+  const seen = booking.visitedAt !== null;
   const [editing, setEditing] = useState(false);
   const { hovered, onHoverIn, onHoverOut } = useHoverable();
   const category = getCategory(booking.categoryKey);
@@ -91,6 +98,7 @@ export function BookingCard({
 
         <Text style={[theme.type.caption, { fontSize: 13, color: theme.colors.accent }]}>
           {STATUS_LABEL[booking.status]}
+          {placeNumber !== undefined && seen ? ' · Seen' : ''}
         </Text>
 
         {transport ? (
@@ -142,6 +150,15 @@ export function BookingCard({
           </Text>
         ) : null}
       </View>
+      {placeNumber !== undefined ? (
+        <PlaceBadge
+          number={placeNumber}
+          seen={seen}
+          title={booking.title}
+          onToggle={() => setSeen.mutate({ bookingId: booking.id, seen: !seen })}
+          size={32}
+        />
+      ) : null}
     </Pressable>
   );
 }

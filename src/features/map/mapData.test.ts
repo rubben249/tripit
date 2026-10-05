@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { makeCity, makeTrip } from '@/test/factories';
 
-import { buildMapData } from './mapData';
+import { buildMapData, mainlandBounds, unionBounds } from './mapData';
 
 const now = new Date(2026, 9, 5, 12, 0);
 const pastItaly = makeTrip({
@@ -73,5 +73,51 @@ describe('buildMapData', () => {
     const empty = makeTrip({ id: 'empty', startDate: '2026-11-01', endDate: '2026-11-02' });
     const withEmpty = buildMapData([empty], [makeCity({ tripId: 'empty' })], now);
     expect(withEmpty.trips).toEqual([]);
+  });
+});
+
+describe('mainlandBounds', () => {
+  it('frames the largest landmass of a multipolygon', () => {
+    const square = (x: number, y: number, size: number): [number, number][] => [
+      [x, y],
+      [x + size, y],
+      [x + size, y + size],
+      [x, y + size],
+      [x, y],
+    ];
+    const bounds = mainlandBounds({
+      type: 'MultiPolygon',
+      coordinates: [[square(-55, 2, 1)], [square(-5, 42, 10)]],
+    });
+    expect(bounds).toEqual([
+      [-5, 42],
+      [5, 52],
+    ]);
+  });
+
+  it('returns null for geometry it cannot frame', () => {
+    expect(mainlandBounds({ type: 'Point', coordinates: [0, 0] })).toBeNull();
+  });
+});
+
+describe('unionBounds', () => {
+  it('spans every box given, ignoring missing ones', () => {
+    expect(
+      unionBounds(
+        [
+          [0, 0],
+          [1, 1],
+        ],
+        null,
+        [
+          [-2, 0.5],
+          [0.5, 3],
+        ],
+      ),
+    ).toEqual([
+      [-2, 0],
+      [1, 3],
+    ]);
+    expect(unionBounds(null)).toBeNull();
   });
 });

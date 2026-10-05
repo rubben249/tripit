@@ -106,3 +106,49 @@ export function buildMapData(trips: Trip[], cities: City[], now: Date = new Date
     trips: mapTrips,
   };
 }
+
+/** A numbered booked place as drawn on the globe. */
+export interface MapPlace {
+  id: string;
+  tripId: string;
+  number: number;
+  lat: number;
+  lng: number;
+  seen: boolean;
+}
+
+type Ring = [number, number][];
+
+function ringArea(ring: Ring): number {
+  let area = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    area += (ring[j]![0] + ring[i]![0]) * (ring[j]![1] - ring[i]![1]);
+  }
+  return Math.abs(area / 2);
+}
+
+/** Bounds of a country's largest landmass, so framing France doesn't swing out to French Guiana
+ * or the US to Hawaii. */
+export function mainlandBounds(geometry: { type: string; coordinates?: unknown }): Bounds | null {
+  const polygons =
+    geometry.type === 'Polygon'
+      ? [geometry.coordinates as Ring[]]
+      : geometry.type === 'MultiPolygon'
+        ? (geometry.coordinates as Ring[][])
+        : [];
+  const outer = polygons
+    .map((rings) => rings[0])
+    .filter((ring): ring is Ring => !!ring && ring.length > 2)
+    .sort((a, b) => ringArea(b) - ringArea(a))[0];
+  if (!outer) return null;
+  return boundsOf(outer.map(([lng, lat]) => ({ lat, lng })));
+}
+
+export function unionBounds(...all: (Bounds | null | undefined)[]): Bounds | null {
+  const present = all.filter((b): b is Bounds => !!b);
+  if (present.length === 0) return null;
+  return [
+    [Math.min(...present.map((b) => b[0][0])), Math.min(...present.map((b) => b[0][1]))],
+    [Math.max(...present.map((b) => b[1][0])), Math.max(...present.map((b) => b[1][1]))],
+  ];
+}

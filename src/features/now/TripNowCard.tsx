@@ -12,6 +12,7 @@ import { TaskCheckbox } from '@/features/tasks/TaskCheckbox';
 import { sortTasks } from '@/features/tasks/sortTasks';
 import { getEffectiveStatus } from '@/features/trips/status';
 import { TripCountdown } from '@/features/trips/TripCountdown';
+import { TripNameLink } from '@/features/trips/TripNameLink';
 import type { Trip } from '@/features/trips/types';
 import { formatTimeUntil } from '@/lib/countdown';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -56,7 +57,7 @@ export function TripNowCard({ trip, now }: { trip: Trip; now: Date }) {
         <Text style={[theme.type.data, { fontSize: 12, color: theme.colors.accent }]}>
           {ongoing ? 'TODAY' : 'COMING UP'}
         </Text>
-        <Text style={[theme.type.headline, { color: theme.colors.text }]}>{trip.name}</Text>
+        <TripNameLink tripId={trip.id} name={trip.name} large />
         {subtitle ? (
           <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>{subtitle}</Text>
         ) : (

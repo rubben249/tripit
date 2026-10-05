@@ -55,6 +55,8 @@ export const BUNDLE_TABLES = {
     'currency',
     'notes',
     'order_index',
+    'visited_at',
+    'geocoded_query',
     'created_at',
     'updated_at',
   ],

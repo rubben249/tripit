@@ -58,7 +58,8 @@ export function filterForShare(tables: BundleTables, options: ShareOptions): Bun
   out.bookings = tables.bookings
     .filter((b) => keepBooking(b, options))
     .map((b) => {
-      const next: BundleRow = { ...b };
+      // "Seen" marks are the sender's own; the receiver starts with nothing marked.
+      const next: BundleRow = { ...b, visited_at: null };
       if (!options.prices) {
         next.price = null;
         next.currency = null;

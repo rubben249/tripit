@@ -73,6 +73,10 @@ export const bookingSchema = z.object({
   currency: z.string().nullable(),
   notes: z.string().nullable(),
   orderIndex: z.number(),
+  /** When the user marked this place as seen — set by hand, never automatically. */
+  visitedAt: z.string().nullable(),
+  /** Place text last sent to the geocoder (see schema v8); lat/lng are its result. */
+  geocodedQuery: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

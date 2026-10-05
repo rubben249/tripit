@@ -9,16 +9,19 @@ import { BookingCard } from '@/features/itinerary/BookingCard';
 import { BookingForm } from '@/features/itinerary/BookingForm';
 import { getDayBookings } from '@/features/itinerary/daySummary';
 import { useBookings, useItineraryDays } from '@/features/itinerary/hooks';
+import { useTripPlaces } from '@/features/places/hooks';
 import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function DayDetailScreen() {
   const theme = useTheme();
-  const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
+  // `add=1` comes from the quick-add (+) button: open the booking form straight away.
+  const { id, dayId, add } = useLocalSearchParams<{ id: string; dayId: string; add?: string }>();
   const { data: trip } = useTrip(id);
   const { data: days } = useItineraryDays(id);
   const { data: bookings } = useBookings(id);
-  const [adding, setAdding] = useState(false);
+  const { numbers: placeNumbers } = useTripPlaces(id);
+  const [adding, setAdding] = useState(add === '1');
 
   const day = days?.find((d) => d.id === dayId);
   if (!day || !trip) return null;
@@ -50,6 +53,7 @@ export default function DayDetailScreen() {
               booking={booking}
               tripId={id}
               defaultCurrency={trip.defaultCurrency}
+              placeNumber={placeNumbers.get(booking.id)}
             />
           ))}
         </View>

@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { bookingCategories, reservationCategoryKeys } from '@/features/bookings/categories';
 import { BookingCard } from '@/features/itinerary/BookingCard';
 import { useBookings } from '@/features/itinerary/hooks';
+import { useTripPlaces } from '@/features/places/hooks';
 import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -16,6 +17,7 @@ export default function ReservationsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: trip } = useTrip(id);
   const { data: bookings } = useBookings(id);
+  const { numbers: placeNumbers } = useTripPlaces(id);
 
   if (!trip) return null;
 
@@ -61,6 +63,7 @@ export default function ReservationsScreen() {
               booking={booking}
               tripId={id}
               defaultCurrency={trip.defaultCurrency}
+              placeNumber={placeNumbers.get(booking.id)}
             />
           ))}
         </View>

@@ -39,6 +39,8 @@ export function makeBooking(overrides: Partial<Booking> = {}): Booking {
     currency: null,
     notes: null,
     orderIndex: 0,
+    visitedAt: null,
+    geocodedQuery: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

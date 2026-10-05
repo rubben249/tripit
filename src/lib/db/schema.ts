@@ -200,4 +200,12 @@ export const migrations: string[] = [
     value text not null
   );
   `,
+
+  // v8 — booked places on the map: when a place was marked as seen (by hand), and the place text
+  // last sent to the geocoder. Nominatim's usage policy asks clients to cache results and never
+  // repeat the same query, so a booking is only geocoded again when its place/address changes.
+  `
+  alter table bookings add column visited_at text;
+  alter table bookings add column geocoded_query text;
+  `,
 ];

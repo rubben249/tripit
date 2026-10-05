@@ -89,6 +89,15 @@ export interface MapColors {
   countryOutline: string;
   city: string;
   cityHalo: string;
+  /** Cities of the trip being looked at (picked by country, chip or city) — terracotta, so they
+   * stand apart from both the plain city dots and the country fill. */
+  cityFocus: string;
+  /** Numbered booked places: the disc and its number. */
+  place: string;
+  placeText: string;
+  /** Places marked as seen: a quieter disc with a check instead of the number. */
+  placeSeen: string;
+  placeSeenMark: string;
 }
 
 export const mapPalettes: Record<ColorScheme, MapColors> = {
@@ -103,6 +112,11 @@ export const mapPalettes: Record<ColorScheme, MapColors> = {
     countryOutline: '#8A5A34',
     city: brand.ink,
     cityHalo: '#FFFBF4',
+    cityFocus: brand.warn,
+    place: brand.ink,
+    placeText: '#FFFBF4',
+    placeSeen: '#D9C6A8',
+    placeSeenMark: '#6B4A33',
   },
   dark: {
     style: 'https://tiles.openfreemap.org/styles/dark',
@@ -115,6 +129,11 @@ export const mapPalettes: Record<ColorScheme, MapColors> = {
     countryOutline: '#E0B57E',
     city: '#EFE6D8',
     cityHalo: '#17110B',
+    cityFocus: '#E08A5F',
+    place: '#EFE6D8',
+    placeText: '#17110B',
+    placeSeen: '#4A3828',
+    placeSeenMark: '#C9AE8C',
   },
 };
 

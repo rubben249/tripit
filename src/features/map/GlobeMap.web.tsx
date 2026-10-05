@@ -9,7 +9,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { MapColors } from '@/theme/tokens';
 
 import type { GlobeMapProps } from './GlobeMap.types';
-import type { MapCity, MapCountry } from './mapData';
+import { mainlandBounds, type MapCity, type MapCountry, type MapPlace } from './mapData';
 
 /**
  * The world globe, on MapLibre GL JS v5 with free OpenFreeMap tiles (no key, no card).
@@ -31,16 +31,68 @@ const FLY_DURATION_MS = 2200;
 
 type MapLibreModule = typeof import('maplibre-gl');
 
-function citiesGeoJson(cities: MapCity[]): FeatureCollection {
+function citiesGeoJson(cities: MapCity[], highlightTripIds: string[]): FeatureCollection {
+  const highlighted = new Set(highlightTripIds);
   return {
     type: 'FeatureCollection',
     features: cities.map((c) => ({
       type: 'Feature',
-      properties: { id: c.id, name: c.name, kind: c.kind },
+      properties: { id: c.id, name: c.name, kind: c.kind, focus: highlighted.has(c.tripId) },
       geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
     })),
   };
 }
+
+function placesGeoJson(places: MapPlace[]): FeatureCollection {
+  // Features draw in source order (last on top), so they're pre-sorted by draw order.
+  const drawOrder = (p: MapPlace) => (p.seen ? -10_000 : 0) - p.number;
+  return {
+    type: 'FeatureCollection',
+    features: [...places]
+      .sort((a, b) => drawOrder(a) - drawOrder(b))
+      .map((p) => ({
+        type: 'Feature',
+        // Where places overlap (same building, or zoomed out to a whole country) the next one to
+        // visit draws on top: places still ahead above seen ones, then by number.
+        properties: {
+          id: p.id,
+          label: String(p.number),
+          seen: p.seen,
+          order: drawOrder(p),
+        },
+        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+      })),
+  };
+}
+
+const SEEN_ICON = 'place-seen-check';
+
+/** The check shown on seen places — drawn on a canvas because the map's fonts have no ✓ glyph. */
+function checkImage(color: string): ImageData {
+  const size = 48;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(13, 25);
+  ctx.lineTo(21, 33);
+  ctx.lineTo(36, 16);
+  ctx.stroke();
+  return ctx.getImageData(0, 0, size, size);
+}
+
+/** Room for the overlays: the title on top and the cards/chips at the bottom. */
+function framePadding(container: HTMLElement) {
+  const h = container.clientHeight;
+  return { top: 100, bottom: Math.min(300, Math.round(h * 0.42)), left: 50, right: 50 };
+}
+
+const INTERACTIVE_LAYERS = ['trip-place-dot', 'trip-city-dot', 'trip-country-fill'];
 
 /** Paint expression for a country fill: its trip kind's color, transparent for the rest. */
 function countryColorExpression(countries: MapCountry[], colors: MapColors) {
@@ -64,6 +116,8 @@ function setupLayers(
   colors: MapColors,
   countries: MapCountry[],
   cities: MapCity[],
+  highlightTripIds: string[],
+  places: MapPlace[],
 ) {
   map.setProjection({ type: 'globe' });
   map.setSky({
@@ -91,8 +145,9 @@ function setupLayers(
       filter: countryFilter(countries),
       paint: {
         'fill-color': countryColorExpression(countries, colors),
-        // 1:110m shapes are coarse up close: fade them out as the real coastline takes over.
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.75, 5, 0.3, 7, 0],
+        // Simplified 1:50m shapes hold up to country zoom; fade out beyond it, where the real
+        // coastline and streets take over.
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.75, 6, 0.35, 9, 0],
       },
     },
     firstLabel,
@@ -106,20 +161,31 @@ function setupLayers(
       paint: {
         'line-color': colors.countryOutline,
         'line-width': 0.8,
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.7, 6, 0],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.7, 7, 0.4, 9, 0],
       },
     },
     firstLabel,
   );
 
-  map.addSource('trip-cities', { type: 'geojson', data: citiesGeoJson(cities) });
+  map.addSource('trip-cities', {
+    type: 'geojson',
+    data: citiesGeoJson(cities, highlightTripIds),
+  });
   map.addLayer({
     id: 'trip-city-dot',
     type: 'circle',
     source: 'trip-cities',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 3.5, 6, 7],
-      'circle-color': colors.city,
+      'circle-radius': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        1,
+        ['case', ['get', 'focus'], 5, 3.5],
+        6,
+        ['case', ['get', 'focus'], 9, 7],
+      ],
+      'circle-color': ['case', ['get', 'focus'], colors.cityFocus, colors.city],
       'circle-stroke-color': colors.cityHalo,
       'circle-stroke-width': 2,
     },
@@ -137,9 +203,50 @@ function setupLayers(
       'text-anchor': 'top',
     },
     paint: {
-      'text-color': colors.city,
+      'text-color': ['case', ['get', 'focus'], colors.cityFocus, colors.city],
       'text-halo-color': colors.cityHalo,
       'text-halo-width': 1.5,
+    },
+  });
+
+  if (map.hasImage(SEEN_ICON)) map.removeImage(SEEN_ICON);
+  map.addImage(SEEN_ICON, checkImage(colors.placeSeenMark), { pixelRatio: 2 });
+  map.addSource('trip-places', { type: 'geojson', data: placesGeoJson(places) });
+  map.addLayer({
+    id: 'trip-place-dot',
+    type: 'circle',
+    source: 'trip-places',
+    paint: {
+      'circle-radius': ['case', ['get', 'seen'], 10, 12],
+      'circle-color': ['case', ['get', 'seen'], colors.placeSeen, colors.place],
+      'circle-stroke-color': colors.cityHalo,
+      'circle-stroke-width': 2,
+    },
+  });
+  map.addLayer({
+    id: 'trip-place-number',
+    type: 'symbol',
+    source: 'trip-places',
+    filter: ['!', ['get', 'seen']],
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 12,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'symbol-sort-key': ['get', 'order'],
+    },
+    paint: { 'text-color': colors.placeText },
+  });
+  map.addLayer({
+    id: 'trip-place-check',
+    type: 'symbol',
+    source: 'trip-places',
+    filter: ['get', 'seen'],
+    layout: {
+      'icon-image': SEEN_ICON,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
     },
   });
 }
@@ -148,8 +255,12 @@ export function GlobeMap({
   colors,
   countries,
   cities,
+  highlightTripIds,
+  places,
   focus,
   onCityPress,
+  onPlacePress,
+  onCountryPress,
   onBackgroundPress,
 }: GlobeMapProps) {
   const theme = useTheme();
@@ -160,9 +271,20 @@ export function GlobeMap({
   const [error, setError] = useState('');
 
   // Latest props, read from MapLibre event handlers registered once at creation.
-  const latest = useRef({ colors, countries, cities, onCityPress, onBackgroundPress });
+  const props = {
+    colors,
+    countries,
+    cities,
+    highlightTripIds,
+    places,
+    onCityPress,
+    onPlacePress,
+    onCountryPress,
+    onBackgroundPress,
+  };
+  const latest = useRef(props);
   useLayoutEffect(() => {
-    latest.current = { colors, countries, cities, onCityPress, onBackgroundPress };
+    latest.current = props;
   });
 
   useEffect(() => {
@@ -173,7 +295,7 @@ export function GlobeMap({
       try {
         const [mod, shapes] = await Promise.all([
           import('maplibre-gl'),
-          import('./countries-110m.json'),
+          import('./countries.json'),
         ]);
         // v5 is a CommonJS/UMD build: depending on interop it arrives as the namespace itself or
         // wrapped in `default`.
@@ -193,9 +315,17 @@ export function GlobeMap({
         // Fires on first load and again after every setStyle (theme switch): the base style
         // replaces all layers, so the trip layers are added back each time.
         map.on('style.load', () => {
-          const { colors: c, countries: k, cities: ci } = latest.current;
+          const l = latest.current;
           if (!map || !countriesRef.current) return;
-          setupLayers(map, countriesRef.current, c, k, ci);
+          setupLayers(
+            map,
+            countriesRef.current,
+            l.colors,
+            l.countries,
+            l.cities,
+            l.highlightTripIds,
+            l.places,
+          );
           setReady(true);
         });
 
@@ -207,18 +337,33 @@ export function GlobeMap({
           }
         });
 
+        // Topmost wins: a numbered place, then a city, then the country underneath.
         map.on('click', (e) => {
-          const hit = map?.queryRenderedFeatures(e.point, { layers: ['trip-city-dot'] })[0];
-          const id = hit?.properties?.id;
-          if (typeof id === 'string') latest.current.onCityPress(id);
-          else latest.current.onBackgroundPress();
+          const hits = map?.queryRenderedFeatures(e.point, { layers: INTERACTIVE_LAYERS }) ?? [];
+          const place = hits.find((h) => h.layer.id === 'trip-place-dot');
+          const city = hits.find((h) => h.layer.id === 'trip-city-dot');
+          const country = hits.find((h) => h.layer.id === 'trip-country-fill');
+          if (place) return latest.current.onPlacePress(String(place.properties.id));
+          if (city) return latest.current.onCityPress(String(city.properties.id));
+          if (country) {
+            const iso = String(country.properties.iso);
+            // Frame from the full-resolution shape, not the tile-clipped one under the pointer.
+            const shape = countriesRef.current?.features.find((f) => f.properties?.iso === iso);
+            return latest.current.onCountryPress(
+              iso,
+              shape ? mainlandBounds(shape.geometry) : null,
+            );
+          }
+          latest.current.onBackgroundPress();
         });
-        map.on('mouseenter', 'trip-city-dot', () => {
-          if (map) map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'trip-city-dot', () => {
-          if (map) map.getCanvas().style.cursor = '';
-        });
+        for (const layer of INTERACTIVE_LAYERS) {
+          map.on('mouseenter', layer, () => {
+            if (map) map.getCanvas().style.cursor = 'pointer';
+          });
+          map.on('mouseleave', layer, () => {
+            if (map) map.getCanvas().style.cursor = '';
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'The map could not load.');
       }
@@ -249,8 +394,11 @@ export function GlobeMap({
       'fill-color',
       countryColorExpression(countries, colors),
     );
-    (map.getSource('trip-cities') as GeoJSONSource | undefined)?.setData(citiesGeoJson(cities));
-  }, [countries, cities, colors, ready]);
+    (map.getSource('trip-cities') as GeoJSONSource | undefined)?.setData(
+      citiesGeoJson(cities, highlightTripIds),
+    );
+    (map.getSource('trip-places') as GeoJSONSource | undefined)?.setData(placesGeoJson(places));
+  }, [countries, cities, highlightTripIds, places, colors, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -262,10 +410,10 @@ export function GlobeMap({
         duration: FLY_DURATION_MS,
         essential: true,
       });
-    } else if (focus.bounds) {
+    } else if (focus.bounds && containerRef.current) {
       map.fitBounds(focus.bounds, {
-        padding: 90,
-        maxZoom: 6.5,
+        padding: framePadding(containerRef.current),
+        maxZoom: focus.maxZoom ?? 6.5,
         duration: FLY_DURATION_MS,
         essential: true,
       });

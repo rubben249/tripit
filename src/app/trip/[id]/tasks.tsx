@@ -17,10 +17,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 export default function TasksScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `add=1` comes from the quick-add (+) button: open the new-task field straight away.
+  const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const { data: bookings } = useBookings(id);
   const createTask = useCreateBooking(id);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(add === '1');
   const [title, setTitle] = useState('');
 
   const tasks = sortTasks((bookings ?? []).filter((b) => b.categoryKey === 'task'));

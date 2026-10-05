@@ -36,6 +36,13 @@ describe('filterForShare', () => {
     expect(JSON.stringify(out)).not.toContain('IB3240');
   });
 
+  it('never sends the sender\'s "seen" marks', () => {
+    const tables = tripTables();
+    tables.bookings[0]!.visited_at = '2026-10-05T10:00:00Z';
+    const out = filterForShare(tables, DEFAULT_SHARE_OPTIONS);
+    expect(out.bookings[0]!.visited_at).toBeNull();
+  });
+
   it('keeps booking numbers only when asked to', () => {
     const out = filterForShare(tripTables(), { ...DEFAULT_SHARE_OPTIONS, bookingNumbers: true });
     expect(JSON.stringify(out)).toContain('IB3240');

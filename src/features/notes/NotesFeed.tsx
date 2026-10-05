@@ -23,13 +23,9 @@ export function noteHref(note: Booking): string {
  * here a note could belong to any trip in focus or to none. */
 export function NotesFeed({ focusTrips }: { focusTrips: Trip[] }) {
   const theme = useTheme();
-  const router = useRouter();
-  const createNote = useCreateNote();
   const tripQueries = useBookingsForTrips(focusTrips.map((t) => t.id));
   const { data: generalNotes } = useGeneralNotes();
   const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState('');
-  const [scope, setScope] = useState<NoteScope | null>(null);
 
   const tripNotes = tripQueries.flatMap((q) =>
     (q.data ?? []).filter((b) => b.categoryKey === 'note'),
@@ -38,19 +34,6 @@ export function NotesFeed({ focusTrips }: { focusTrips: Trip[] }) {
     b.updatedAt.localeCompare(a.updatedAt),
   );
   const tripById = new Map(focusTrips.map((t) => [t.id, t]));
-  const canCreate = !!title.trim() && !!scope && !createNote.isPending;
-
-  const onCreate = async () => {
-    if (!canCreate || !scope) return;
-    const created = await createNote.mutateAsync({
-      tripId: scope.kind === 'trip' ? scope.trip.id : null,
-      title: title.trim(),
-    });
-    setTitle('');
-    setScope(null);
-    setAdding(false);
-    router.push(noteHref(created) as never);
-  };
 
   return (
     <View style={{ gap: theme.space.sm }}>
@@ -69,56 +52,83 @@ export function NotesFeed({ focusTrips }: { focusTrips: Trip[] }) {
       ))}
 
       {adding ? (
-        <View style={{ gap: theme.space.sm }}>
-          <TextField
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Note title…"
-            autoFocus
-            onSubmitEditing={onCreate}
-            name="now-note-title"
-          />
-          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-            Where does it go?
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs }}>
-            <ScopeChip
-              icon="document-text-outline"
-              label="General"
-              selected={scope?.kind === 'general'}
-              onPress={() => setScope({ kind: 'general' })}
-            />
-            {focusTrips.map((trip) => (
-              <ScopeChip
-                key={trip.id}
-                icon="briefcase-outline"
-                label={trip.name}
-                selected={scope?.kind === 'trip' && scope.trip.id === trip.id}
-                onPress={() => setScope({ kind: 'trip', trip })}
-              />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
-            <Button variant="primary" size="sm" onPress={onCreate} disabled={!canCreate}>
-              Create
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onPress={() => {
-                setAdding(false);
-                setScope(null);
-              }}
-            >
-              Cancel
-            </Button>
-          </View>
-        </View>
+        <NoteComposer focusTrips={focusTrips} onCancel={() => setAdding(false)} />
       ) : (
         <Button variant="dashed" fullWidth onPress={() => setAdding(true)}>
           + New note
         </Button>
       )}
+    </View>
+  );
+}
+
+/** Title + destination for a new note, then opens it. Outside a trip a note could belong to any
+ * trip in focus or to none, so the destination must be picked explicitly. */
+export function NoteComposer({
+  focusTrips,
+  onCancel,
+  replace,
+}: {
+  focusTrips: Trip[];
+  onCancel: () => void;
+  /** Replace the current screen with the new note (e.g. when composing inside a modal). */
+  replace?: boolean;
+}) {
+  const theme = useTheme();
+  const router = useRouter();
+  const createNote = useCreateNote();
+  const [title, setTitle] = useState('');
+  const [scope, setScope] = useState<NoteScope | null>(null);
+  const canCreate = !!title.trim() && !!scope && !createNote.isPending;
+
+  const onCreate = async () => {
+    if (!canCreate || !scope) return;
+    const created = await createNote.mutateAsync({
+      tripId: scope.kind === 'trip' ? scope.trip.id : null,
+      title: title.trim(),
+    });
+    const href = noteHref(created) as never;
+    if (replace) router.replace(href);
+    else router.push(href);
+    onCancel();
+  };
+
+  return (
+    <View style={{ gap: theme.space.sm }}>
+      <TextField
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Note title…"
+        autoFocus
+        onSubmitEditing={onCreate}
+        name="now-note-title"
+      />
+      <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>Where does it go?</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs }}>
+        <ScopeChip
+          icon="document-text-outline"
+          label="General"
+          selected={scope?.kind === 'general'}
+          onPress={() => setScope({ kind: 'general' })}
+        />
+        {focusTrips.map((trip) => (
+          <ScopeChip
+            key={trip.id}
+            icon="briefcase-outline"
+            label={trip.name}
+            selected={scope?.kind === 'trip' && scope.trip.id === trip.id}
+            onPress={() => setScope({ kind: 'trip', trip })}
+          />
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
+        <Button variant="primary" size="sm" onPress={onCreate} disabled={!canCreate}>
+          Create
+        </Button>
+        <Button variant="secondary" size="sm" onPress={onCancel}>
+          Cancel
+        </Button>
+      </View>
     </View>
   );
 }

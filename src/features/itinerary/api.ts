@@ -197,6 +197,8 @@ interface BookingRow {
   currency: string | null;
   notes: string | null;
   order_index: number;
+  visited_at: string | null;
+  geocoded_query: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -222,6 +224,8 @@ function rowToBooking(row: BookingRow): Booking {
     currency: row.currency,
     notes: row.notes,
     orderIndex: row.order_index,
+    visitedAt: row.visited_at,
+    geocodedQuery: row.geocoded_query,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -309,6 +313,10 @@ export type BookingUpdate = Partial<
     | 'currency'
     | 'notes'
     | 'orderIndex'
+    | 'lat'
+    | 'lng'
+    | 'visitedAt'
+    | 'geocodedQuery'
   >
 >;
 
@@ -329,7 +337,8 @@ export async function updateBooking(id: string, update: BookingUpdate): Promise<
   await db.runAsync(
     `update bookings set title = ?, status = ?, category_key = ?, day_id = ?, city_id = ?,
        start_at = ?, end_at = ?, timezone = ?, location_name = ?, address = ?, details = ?,
-       price = ?, currency = ?, notes = ?, order_index = ?, updated_at = ? where id = ?`,
+       price = ?, currency = ?, notes = ?, order_index = ?, lat = ?, lng = ?, visited_at = ?,
+       geocoded_query = ?, updated_at = ? where id = ?`,
     next.title,
     next.status,
     next.categoryKey,
@@ -345,6 +354,10 @@ export async function updateBooking(id: string, update: BookingUpdate): Promise<
     next.currency,
     next.notes,
     next.orderIndex,
+    next.lat,
+    next.lng,
+    next.visitedAt,
+    next.geocodedQuery,
     next.updatedAt,
     id,
   );

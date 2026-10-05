@@ -19,7 +19,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 export default function ExpensesScreen() {
   const theme = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `add=1` comes from the quick-add (+) button: open the add flow straight away.
+  const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const { data: trip } = useTrip(id);
   const { data: bookings } = useBookings(id);
   const defaultCurrency = trip?.defaultCurrency ?? '';
@@ -107,7 +108,7 @@ export default function ExpensesScreen() {
         </View>
       ) : null}
 
-      <AddExpense tripId={id} defaultCurrency={defaultCurrency} />
+      <AddExpense tripId={id} defaultCurrency={defaultCurrency} startOpen={add === '1'} />
       <CurrencyConverter defaultFrom={defaultCurrency} />
     </Screen>
   );
@@ -117,10 +118,18 @@ export default function ExpensesScreen() {
  * chosen day — not a separate entity. That's what makes it show up on
  * Itinerary (so you can see which day you spent it) and in Reservations,
  * with nothing to keep in sync by hand. */
-function AddExpense({ tripId, defaultCurrency }: { tripId: string; defaultCurrency: string }) {
+function AddExpense({
+  tripId,
+  defaultCurrency,
+  startOpen,
+}: {
+  tripId: string;
+  defaultCurrency: string;
+  startOpen: boolean;
+}) {
   const theme = useTheme();
   const { data: days } = useItineraryDays(tripId);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [dayId, setDayId] = useState<string | null>(null);
 
   const selectedDay = days?.find((d) => d.id === dayId);

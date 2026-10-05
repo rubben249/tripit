@@ -17,7 +17,10 @@ export default function ItineraryScreen() {
   const { data: days } = useItineraryDays(id);
   const { data: bookings } = useBookings(id);
 
-  if (!days || days.length === 0) {
+  // Avoid flashing the empty-state text while the local database is still opening.
+  if (!days) return null;
+
+  if (days.length === 0) {
     return (
       <Screen>
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
