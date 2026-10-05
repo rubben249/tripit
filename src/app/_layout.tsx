@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import Head from 'expo-router/head';
 import {
@@ -12,9 +13,12 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { purgeExpiredTrash } from '@/features/trips/api';
 import { env } from '@/config/env';
 import { fontAssets } from '@/theme/tokens';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+
+const queryClient = new QueryClient();
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -37,16 +41,22 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    purgeExpiredTrash().catch((err: unknown) => console.warn('Failed to purge trash', err));
+  }, []);
+
   if (!loaded) {
     return null;
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -94,6 +104,8 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Add' }} />
+        <Stack.Screen name="trip/new" options={{ presentation: 'modal', title: 'New trip' }} />
+        <Stack.Screen name="trip/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>

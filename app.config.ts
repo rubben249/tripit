@@ -36,11 +36,15 @@ const config: ExpoConfig = {
   },
   web: {
     bundler: 'metro',
-    output: 'static',
+    // 'single' (SPA) instead of 'static': this app is local-first/client-only
+    // with no server-rendered content, and expo-sqlite's web backend needs a
+    // Worker that can't be bundled into Expo Router's static pre-render pass.
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
     'expo-router',
+    'expo-sqlite',
     [
       'expo-splash-screen',
       {

@@ -43,6 +43,11 @@ jobs:
       # paths by default).
       - run: touch dist/.nojekyll
 
+      # web.output is 'single' (SPA) — only one index.html is generated, so
+      # GitHub Pages 404s on a direct deep link (e.g. /trip/new). Serving
+      # index.html as the 404 page lets client-side routing take over.
+      - run: cp dist/index.html dist/404.html
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
