@@ -21,7 +21,7 @@ import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { useCreateBooking, useDeleteBooking, useUpdateBooking } from './hooks';
-import type { Booking } from './types';
+import { BOOKING_STATUS_OPTIONS, type Booking, type BookingStatus } from './types';
 
 const FORM_CATEGORY_KEYS = categoryKeys.filter((k) => k !== 'note');
 
@@ -56,9 +56,13 @@ export function BookingForm({
   const [categoryKey, setCategoryKey] = useState<CategoryKey>(
     booking?.categoryKey ?? 'sightseeing',
   );
+  const [status, setStatus] = useState<BookingStatus>(booking?.status ?? 'idea');
   const [title, setTitle] = useState(booking?.title ?? '');
   const [time, setTime] = useState(timeOf(booking?.startAt));
   const [arrivalTime, setArrivalTime] = useState(timeOf(booking?.endAt));
+  const [arrivalDate, setArrivalDate] = useState<string | null>(
+    booking?.endAt?.slice(0, 10) ?? date,
+  );
   const [checkIn, setCheckIn] = useState<string | null>(booking?.startAt?.slice(0, 10) ?? date);
   const [checkOut, setCheckOut] = useState<string | null>(booking?.endAt?.slice(0, 10) ?? null);
   const [locationName, setLocationName] = useState(booking?.locationName ?? '');
@@ -104,11 +108,12 @@ export function BookingForm({
     const endAt = isAccommodation
       ? (checkOut ?? undefined)
       : isTransport && arrivalTime.trim()
-        ? `${date}T${arrivalTime.trim()}:00`
+        ? `${arrivalDate ?? date}T${arrivalTime.trim()}:00`
         : undefined;
 
     const common = {
       categoryKey,
+      status,
       title: trimmed,
       startAt,
       endAt,
@@ -123,7 +128,7 @@ export function BookingForm({
     if (isEditing) {
       await updateBooking.mutateAsync({ id: booking.id, update: common });
     } else {
-      await createBooking.mutateAsync({ ...common, dayId, cityId, status: 'idea' });
+      await createBooking.mutateAsync({ ...common, dayId, cityId });
     }
     onDone();
   };
@@ -170,6 +175,17 @@ export function BookingForm({
         placeholder="What is it?"
         name="booking-title"
       />
+
+      <View style={{ flexDirection: 'row', gap: theme.space.xs, flexWrap: 'wrap' }}>
+        {BOOKING_STATUS_OPTIONS.map((option) => (
+          <StatusChip
+            key={option.key}
+            label={option.label}
+            active={option.key === status}
+            onPress={() => setStatus(option.key)}
+          />
+        ))}
+      </View>
 
       {isTransport ? (
         <>
@@ -220,12 +236,27 @@ export function BookingForm({
               name="booking-arr-terminal"
             />
           </View>
-          <TextField
-            value={arrivalTime}
-            onChangeText={setArrivalTime}
-            placeholder="Arrival time 11:30"
-            name="booking-arr-time"
-          />
+          <View style={{ flexDirection: 'row', gap: theme.space.xs }}>
+            <View style={{ flex: 1 }}>
+              <DateField
+                label="Arrival date"
+                value={arrivalDate}
+                onChange={setArrivalDate}
+                minDate={time.trim() ? date : undefined}
+                name="booking-arr-date"
+              />
+            </View>
+            <TextField
+              value={arrivalTime}
+              onChangeText={setArrivalTime}
+              placeholder="Arrival time 11:30"
+              style={{ width: 120 }}
+              name="booking-arr-time"
+            />
+          </View>
+          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+            Arrival date defaults to the departure day — change it for overnight journeys.
+          </Text>
         </>
       ) : isAccommodation ? (
         <>
@@ -337,6 +368,45 @@ export function BookingForm({
 
       {dialog}
     </View>
+  );
+}
+
+function StatusChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        paddingHorizontal: theme.space.sm,
+        paddingVertical: 6,
+        borderRadius: theme.radius.pill,
+        backgroundColor: active ? theme.colors.steel : 'transparent',
+        borderWidth: 1,
+        borderColor: active ? theme.colors.steel : theme.colors.border,
+        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+      })}
+    >
+      <Text
+        style={[
+          theme.type.caption,
+          { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

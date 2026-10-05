@@ -101,4 +101,21 @@ export const migrations: string[] = [
 
   create index idx_expenses_trip on expenses(trip_id);
   `,
+
+  // v3 — photos attached to a note (bookings with categoryKey 'note'). Stored
+  // as a base64 data URI alongside a user-given name: this app's single
+  // storage engine is already SQLite everywhere (native + wa-sqlite/OPFS on
+  // web, see CLAUDE.md "Modelo local-first"), so keeping photos in the same
+  // place avoids a second, platform-specific filesystem path for web.
+  `
+  create table note_photos (
+    id text primary key,
+    note_id text not null references bookings(id) on delete cascade,
+    name text not null,
+    data text not null,
+    created_at text not null
+  );
+
+  create index idx_note_photos_note on note_photos(note_id);
+  `,
 ];

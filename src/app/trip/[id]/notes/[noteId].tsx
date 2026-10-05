@@ -8,6 +8,7 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useBookings, useDeleteBooking, useUpdateBooking } from '@/features/itinerary/hooks';
 import type { Booking } from '@/features/itinerary/types';
+import { NotePhotos } from '@/features/notes/NotePhotos';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function NoteDetailScreen() {
@@ -44,6 +45,8 @@ export default function NoteDetailScreen() {
           navigation) resets the editor's local state from the new note's
           fields instead of needing an effect to sync it. */}
       <NoteEditor key={note.id} tripId={id} note={note} />
+
+      <NotePhotos noteId={note.id} />
 
       <Button variant="danger" onPress={onDelete}>
         Delete note

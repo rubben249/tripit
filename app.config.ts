@@ -46,6 +46,12 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-sqlite',
     [
+      'expo-image-picker',
+      {
+        photosPermission: 'TripIt uses your photos to attach them to trip notes.',
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         image: './assets/images/splash-icon.png',

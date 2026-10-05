@@ -36,6 +36,14 @@ export type ItineraryDay = z.infer<typeof itineraryDaySchema>;
 export const bookingStatusSchema = z.enum(['idea', 'to_book', 'booked', 'paid', 'cancelled']);
 export type BookingStatus = z.infer<typeof bookingStatusSchema>;
 
+export const BOOKING_STATUS_OPTIONS: { key: BookingStatus; label: string }[] = [
+  { key: 'idea', label: 'Idea' },
+  { key: 'to_book', label: 'To book' },
+  { key: 'booked', label: 'Booked' },
+  { key: 'paid', label: 'Paid' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
 // Cast to a literal tuple (not just [string, ...string[]]) so z.enum infers
 // the actual CategoryKey union instead of widening every category to `string`
 // — that widening previously forced `as CategoryKey` casts everywhere a

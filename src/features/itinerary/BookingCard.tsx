@@ -8,7 +8,9 @@ import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { BookingForm } from './BookingForm';
-import type { Booking } from './types';
+import { BOOKING_STATUS_OPTIONS, type Booking } from './types';
+
+const STATUS_LABEL = Object.fromEntries(BOOKING_STATUS_OPTIONS.map((o) => [o.key, o.label]));
 
 function timeOf(iso: string | null): string | null {
   return iso ? iso.slice(11, 16) : null;
@@ -32,6 +34,10 @@ export function BookingCard({
     : null;
   const depTime = timeOf(booking.startAt);
   const arrTime = timeOf(booking.endAt);
+  const overnight =
+    !!booking.startAt &&
+    !!booking.endAt &&
+    booking.startAt.slice(0, 10) !== booking.endAt.slice(0, 10);
   const dayFallback = booking.startAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
 
   if (editing) {
@@ -83,6 +89,10 @@ export function BookingCard({
           ) : null}
         </View>
 
+        <Text style={[theme.type.caption, { color: theme.colors.accent }]}>
+          {STATUS_LABEL[booking.status]}
+        </Text>
+
         {transport ? (
           <>
             {transport.carrierNumber ? (
@@ -94,7 +104,8 @@ export function BookingCard({
               {depTime ?? '—'} {transport.departureLocation ?? ''}
               {transport.departureTerminal ? ` (T${transport.departureTerminal})` : ''}
               {'  →  '}
-              {arrTime ?? '—'} {transport.arrivalLocation ?? ''}
+              {arrTime ?? '—'}
+              {overnight ? ' (+1 day)' : ''} {transport.arrivalLocation ?? ''}
               {transport.arrivalTerminal ? ` (T${transport.arrivalTerminal})` : ''}
             </Text>
           </>
