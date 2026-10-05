@@ -2,6 +2,8 @@
 
 > Este documento es la transcripción íntegra del encargo original dado por el usuario, guardada como fuente de verdad del proyecto. No se reinterpreta ni se recorta: si algo cambia, se actualiza aquí y se anota la decisión en `docs/PLAN.md`.
 
+> ⚠️ **Renegociación del 2026-10-05**: el requisito "no negociable" de la sección 0 y la sección 10 sobre sincronización en tiempo real por cuenta de email queda **sustituido** por un modelo local-first: cada viaje vive en el dispositivo sin necesitar cuenta, y compartirlo con otros es un acto explícito por código QR + código temporal (caduca a los 3 minutos), con selección de qué categorías de datos compartir y exclusión de campos sensibles (p. ej. nº de vuelo) por defecto. El texto original de abajo se conserva tal cual para no perder el histórico de la decisión, pero donde contradiga esto, manda esta nota. Detalle completo en `docs/PLAN.md` (secciones 1, 3, 4 y Fase 5) y en `CLAUDE.md`.
+
 ## 0. Rol, objetivo y forma de trabajar
 
 Actuar como un equipo senior completo: product manager, diseñador UX/UI, ingeniero mobile y web, ingeniero backend, experto en seguridad y QA. Construir desde cero una app de itinerarios de viaje lo más completa posible. Debe ser bonita, elegante, interactiva, fácil de usar, segura y fluida.

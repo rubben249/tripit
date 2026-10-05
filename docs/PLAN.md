@@ -1,6 +1,8 @@
 # Plan — TripIt (app privada de itinerarios de viaje)
 
-> Estado: **aprobado**. Paleta **Atlas Blue**, tipografía (Fraunces + Work Sans + IBM Plex Mono) y navegación (pestañas abajo en móvil / barra lateral en web) confirmadas — ver la propuesta visual del 2026-10-04. Las secciones de coste cero y priorización de funciones se completaron con mi conocimiento actual en lugar de con una verificación web en vivo; están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza.
+> Estado: **Fase 1 cerrada (2026-10-05)**. Paleta **Atlas Blue**, tipografía (Fraunces + Work Sans + IBM Plex Mono) y navegación (pestañas abajo en móvil / barra lateral en web) confirmadas — ver la propuesta visual del 2026-10-04. Las secciones de coste cero y priorización de funciones se completaron con mi conocimiento actual en lugar de con una verificación web en vivo; están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza.
+>
+> ⚠️ **Pivote del 2026-10-05 — modelo local-first**: durante la Fase 1 se renegoció el requisito de sincronización continua por cuenta (ver nota al principio de `docs/REQUISITOS.md`). Las secciones 3 y 4 de aquí abajo, y las Fases 2 y 5, están actualizadas para reflejarlo. El resto del documento (Fases 1, 3, 4, 6, 7, 8) sigue vigente tal cual.
 
 ## 1. Resumen de decisiones
 
@@ -13,7 +15,8 @@
 | Nombre de la app | `TripIt` por defecto, configurable vía `EXPO_PUBLIC_APP_NAME` | Nombre fijo en código | Pedido explícito del usuario; además `TripIt` coincide con una app comercial existente (SAP Concur) — sin problema legal al ser privada y no publicada en tiendas, pero queda fácil de cambiar si se desea. |
 | Moneda por defecto | EUR, cambiable por el usuario en ajustes y por viaje | Fijar una sola moneda | Pedido explícito; además varios viajes pueden tener monedas distintas. |
 | Distribución iPhone | PWA instalada desde Safari como base; nativo vía sideloading (SideStore/AltStore) como extra opcional | Solo nativo, solo PWA | El usuario no tiene Mac; la PWA no depende de macOS ni de refrescar cada 7 días. Se detalla en sección 8 y se confirmará alcance tras la investigación de límites. |
-| Base local offline-first | SQLite (`expo-sqlite`) en móvil + IndexedDB en web, con un "outbox" de mutaciones propio sobre TanStack Query (persistencia de caché + cola de cambios pendientes), sincronizando contra Supabase por polling incremental (`updated_at`) y Realtime para push en vivo | WatermelonDB (su soporte web es limitado/experimental, descartado), RxDB con plugin de replicación a Supabase (viable pero es una dependencia de terceros más pesada y menos madura para este caso), PowerSync (capa de sync gestionada, pero añade un servicio externo más cuyo plan gratuito no está verificado en vivo) | Con un volumen de datos por viaje pequeño (decenas de reservas, no miles), un outbox propio es más simple de razonar, no depende de la disponibilidad ni de los límites de un servicio de sincronización de terceros, y da control total sobre la resolución de conflictos por campo descrita en la sección 3. Si en la Fase 2 la complejidad resulta mayor de lo esperado, se reevalúa PowerSync como mejora. |
+| Base local offline-first | SQLite (`expo-sqlite`) en móvil + IndexedDB en web — ver fila de abajo, pasa de ser "caché offline de Supabase" a ser **la fuente de verdad principal** | WatermelonDB (su soporte web es limitado/experimental, descartado), RxDB con plugin de replicación a Supabase, PowerSync | Elección técnica (SQLite/IndexedDB) se mantiene tras el pivote local-first; lo que cambia es su rol — ya no es un outbox temporal hacia Supabase, es donde vive el viaje siempre, salvo que se comparta. |
+| **Modelo de datos multiusuario (pivote 2026-10-05)** | **Local-first**: cada viaje vive en el dispositivo por defecto, con ID generado en el cliente, sin necesitar cuenta. Compartir es un acto explícito — código QR + código corto temporal (caduca a los 3 min) — no sincronización continua por defecto. El login por magic link (Fase 1) queda construido pero sin usarse hasta que haga falta. | Cuenta + Supabase Realtime desde el primer viaje para todo el mundo (plan original de la sección 10 del encargo) | Decisión explícita del usuario. Motivada en parte por la fricción real del límite de envío de emails del plan gratuito de Supabase sin SMTP propio, y en parte por preferencia de producto ("cada móvil tiene sus viajes"). Renegocia el requisito marcado no-negociable en `docs/REQUISITOS.md` sección 0/10 — ver la anotación ahí. Abre preguntas de diseño aún sin resolver, detalladas en la Fase 5 más abajo. |
 | Funciones extra (sección 11) incluidas en v1 | Ver Fase 7 — orden: validación del itinerario · recordatorios inteligentes · prepare offline + conversor de moneda/propinas · añadir lugares pegando un enlace · tiempo por ciudad/día | Asistente conversacional, estado de vuelo en tiempo real, widgets, álbum de fotos compartido — pospuestas a después de la v1 | Se prioriza lo que reduce errores reales del itinerario (la propia validación de fechas/nombres que pide el encargo) y fricción del día a día del viaje, sobre funciones vistosas pero menos críticas; ver razonamiento completo en Fase 7. |
 
 ## 2. Análisis de coste cero
@@ -39,29 +42,33 @@
 
 ## 3. Arquitectura
 
+> ⚠️ Reescrita 2026-10-05 tras el pivote local-first. El diagrama y los dos flujos de abajo sustituyen la versión original (que trataba Supabase como fuente de verdad permanente desde el primer viaje).
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Cliente (Expo / React Native)               │
 │  iOS (PWA / sideload)   Android (APK)   Web (react-native-web)   │
 │                                                                   │
-│  UI (Expo Router) ─ TanStack Query ─ Store local offline-first   │
-│        │                                   │                     │
-│        │                          Outbox de mutaciones           │
-│        │                          (cola de cambios pendientes)   │
-│        ▼                                   ▼                     │
-│  Cadena de extracción local        Motor de sincronización       │
-│  (QR/barcode, OCR on-device,             │                       │
-│   parsers de texto de PDF)               │                       │
+│  UI (Expo Router) ─ TanStack Query ─ Store local (SQLite/IndexedDB)│
+│        │                                   │  ← FUENTE DE VERDAD  │
+│        │                                   │   (IDs generados     │
+│        │                                   │    en el cliente)    │
+│  Cadena de extracción local        Sesión de compartir (Fase 5,   │
+│  (QR/barcode, OCR on-device,       diseño pendiente): genera un   │
+│   parsers de texto de PDF)         código corto + QR, con los     │
+│                                     campos/categorías elegidos,    │
+│                                     válido 3 minutos               │
 └───────────────────────────────────────────┼──────────────────────┘
-                                             │ HTTPS / Realtime (WebSocket)
+                                             │ solo al compartir un viaje
                                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Supabase (UE, gratuito)                  │
-│  Auth (magic link, allowlist)      Postgres + Row Level Security │
-│  Storage (documentos, fotos,       Realtime (cambios en vivo)    │
-│    URLs firmadas de corta vida)    Edge Functions (validación,   │
-│  Scheduled: backups, keep-alive     parsing server-side, rate     │
-│                                      limiting, export/import)    │
+│          Supabase (UE, gratuito) — opcional, por viaje            │
+│  Auth (magic link, allowlist — construido en Fase 1,              │
+│    listo pero sin usarse por defecto)                             │
+│  Postgres + RLS: profiles/allowed_emails (ya aplicado) +           │
+│    tablas de sesión de compartir (a diseñar en Fase 5)            │
+│  Storage, Realtime — se activan solo si/cuando se decida que un   │
+│    viaje compartido necesita seguir actualizándose en vivo        │
 └─────────────────────────────────────────────────────────────────┘
           │                        │                     │
           ▼                        ▼                     ▼
@@ -70,60 +77,70 @@
    - Keep-alive Supabase                           Frankfurter (tipos de cambio)
    - Backups periódicos                            Open-Meteo (tiempo)
    - Build APK / IPA                                Expo Push (notificaciones)
-   - Deploy web (GH Pages / Cloudflare Pages)
+   - Deploy web (GitHub Pages — ya desplegado)
 ```
 
-**Flujo de importación de reservas** (detalle completo se explicará y acordará antes de implementar la Fase 3):
+**Flujo de importación de reservas** (detalle completo se explicará y acordará antes de implementar la Fase 3; sin cambios por el pivote, solo que el resultado se guarda localmente en vez de en Supabase):
 1. Usuario sube imagen/PDF → se procesa primero **en el dispositivo** (gratis, sin límites de API): lectura de QR/código de barras (estándar IATA BCBP para tarjetas de embarque), OCR on-device (ML Kit en Android, Vision en iOS, fallback tesseract.js en web), extracción de texto nativo de PDFs.
 2. Un conjunto de **parsers específicos** (reglas + expresiones regulares) interpreta formatos conocidos (Ryanair, Booking.com, Trenitalia, Italo, Trenord, billetes genéricos de tren/bus).
 3. Si el resultado es insuficiente, se ofrece revisión manual asistida (campos editables) — nunca se guarda sin que el usuario confirme los campos de baja confianza.
 4. Solo si se decide usar un modelo de IA gratuito como último recurso (a acordar contigo explícitamente, con análisis de privacidad primero), se usaría como *fallback* para itinerarios complejos como el PDF de ejemplo — el contenido del documento se trata siempre como datos, nunca como instrucciones.
 
-**Sincronización y resolución de conflictos** (propuesta a validar contigo antes de implementar la Fase 2):
-- Cada fila mutable tiene `updated_at` y `updated_by`. Cuando dos ediciones del mismo registro llegan offline, se aplica **last-write-wins por campo** (no por fila completa): se comparan los campos modificados y se conserva el valor más reciente de cada uno, no se pisa un registro entero por un solo campo cambiado.
-- Si dos campos *distintos* del mismo registro cambiaron en paralelo, se combinan sin conflicto.
-- Si el *mismo* campo cambió en ambos sitios, se conserva el más reciente y se dispara una entrada en `activity_log` visible como aviso ("Ana y Luis editaron la hora del Coliseo — se mantuvo el cambio de Luis, más reciente") con opción de deshacer.
-- Los cambios se encolan en un "outbox" local cuando no hay conexión y se reproducen en orden al recuperar la red; Realtime de Supabase empuja los cambios de otros participantes en vivo cuando hay conexión.
+**Modelo local-first y compartir** (sustituye la antigua sección de "sincronización y resolución de conflictos" — aquella asumía que todo viaje sincronizaba en vivo contra Supabase desde el principio):
+- Cada viaje se crea con un UUID generado **en el propio cliente** (no depende de que exista fila alguna en Supabase) y vive en SQLite (nativo) / IndexedDB (web) como única fuente de verdad, sin red de por medio.
+- "Compartir" (Fase 5, diseño detallado pendiente) es un acto explícito, no sincronización continua por defecto: el dueño genera una sesión temporal (código corto + QR, caduca a los 3 minutos) y elige qué categorías de datos incluir, pudiendo excluir campos marcados como sensibles (p. ej. nº de vuelo) por defecto o a voluntad.
+- **Preguntas de diseño todavía abiertas**, a resolver contigo al empezar la Fase 5 antes de construirlo:
+  1. La copia que recibe el otro dispositivo, ¿queda como una instantánea independiente (como un export/import puntual), o el receptor puede quedarse "siguiendo" cambios futuros del original? Si es lo segundo, ese viaje concreto sí necesita un respaldo en Supabase aunque sea ligero.
+  2. ¿Un código temporal sirve para un solo receptor o varios a la vez (p. ej. compartir con todo un grupo familiar de una vez)?
+  3. Si el receptor edita su copia, ¿esos cambios pueden volver al dueño original, o son independientes a partir de ahí?
+- El login por magic link y el Auth Hook de allowlist (Fase 1) quedan construidos y verificados, listos para el día que se decida ofrecer cuentas/sincronización continua — pero no forman parte del flujo principal de "compartir" tal como se pidió.
 
 ## 4. Modelo de datos
 
-🔶 Esquema completo propuesto — se refinará y se convertirá en migraciones SQL versionadas en la Fase 1, con políticas RLS exactas por tabla.
+> ⚠️ Reescrita 2026-10-05. El esquema de abajo ahora se divide en **local** (vive en SQLite/IndexedDB, es la fuente de verdad de cada viaje) y **Supabase** (ya aplicado para `profiles`/`allowed_emails`; el resto se diseña en detalle en la Fase 5, junto con las preguntas abiertas de la sección 3).
 
-### Tablas principales
+### Tablas locales (SQLite / IndexedDB — fuente de verdad del viaje)
 
+Mismo contenido que las tablas de viaje descritas más abajo (`trips`, `cities`, `itinerary_days`, `booking_categories`, `bookings`, `documents`, `expenses`, `expense_splits`, `tasks`, `packing_items`, `activity_log`, `comments`, `polls`/`poll_votes`), pero:
+- **`id` se genera en el cliente** (UUID v4) en el momento de crear cada fila, no lo asigna un servidor.
+- **No hay `trip_members` ni `trip_invites`** tal como estaban pensadas (persistentes, basadas en cuenta) — el control de quién ve el viaje es simplemente "está en mi dispositivo". La noción de "participantes" de un viaje (para repartir gastos, p. ej.) pasa a ser una lista de **nombres locales** que el dueño del viaje escribe a mano (`trip_participants`: `id`, `trip_id`, `display_name`), no usuarios con cuenta — así que `expense_splits.user_id` cambia a `expense_splits.participant_id` apuntando ahí.
+- Export/import JSON (ya contemplado en el encargo, sección 3) es el mecanismo de respaldo y de traspaso manual completo de un viaje — independiente del mecanismo de "compartir parcial" por QR de la Fase 5.
+
+### Tablas en Supabase
+
+**Ya aplicadas (Fase 1):**
 - **`profiles`** (1:1 con `auth.users`): `id`, `email`, `display_name`, `avatar_url`, `is_admin`, `created_at`.
 - **`allowed_emails`**: allowlist de acceso cerrado — `email`, `invited_by`, `created_at`, `used_at`.
-- **`trips`**: `id`, `owner_id`, `name`, `description`, `status` (`draft`/`upcoming`/`ongoing`/`past`/`archived`), `start_date`, `end_date`, `default_currency`, `cover_image_url`, `created_at`, `updated_at`, `deleted_at` (papelera de 30 días).
-- **`trip_members`**: `trip_id`, `user_id`, `role` (`owner`/`editor`/`viewer`), `joined_at`, `personal_notes` (solo visibles para ese usuario).
-- **`trip_invites`**: `id`, `trip_id`, `short_code`, `link_token`, `role`, `expires_at`, `single_use`, `used_at`, `revoked_at`, `created_by`.
+
+**Pendientes de diseñar en la Fase 5** (dependen de las respuestas a las preguntas abiertas de la sección 3): algo en la línea de una tabla `share_sessions` (`code` corto, `qr_payload`, `trip_snapshot` o `trip_id` según se resuelva la pregunta de instantánea-vs-en-vivo, `selected_categories`, `exclude_sensitive_fields`, `expires_at`, `created_at`) que el dispositivo receptor consulta con el código antes de que caduque a los 3 minutos. Las tablas de viaje completas (`trips`, `cities`, etc.) **solo** se replican a Supabase si las preguntas abiertas de la sección 3 se resuelven a favor de "seguir recibiendo cambios en vivo" — si se resuelven a favor de "instantánea", no hace falta tabla de viaje en Supabase en absoluto, solo la sesión temporal.
+
+### Referencia: columnas de las tablas de viaje (aplican igual en local; en Supabase solo si la Fase 5 lo requiere)
+
+- **`trips`**: `id`, `name`, `description`, `status` (`draft`/`upcoming`/`ongoing`/`past`/`archived`), `start_date`, `end_date`, `default_currency`, `cover_image_url`, `created_at`, `updated_at`, `deleted_at` (papelera de 30 días).
+- **`trip_participants`**: `id`, `trip_id`, `display_name` — nombres locales para repartir gastos/tareas, sin cuenta asociada.
 - **`cities`**: `id`, `trip_id`, `name`, `country_code`, `lat`, `lng`, `arrival_date`, `departure_date`, `order_index`.
 - **`itinerary_days`**: `id`, `trip_id`, `city_id`, `date`, `day_index`, `notes`.
-- **`booking_categories`**: `id`, `trip_id` (null = categoría global del usuario), `key`, `label`, `icon`, `color`, `is_custom`, `sort_order`, `hidden`, `field_schema` (JSONB, define campos propios de categorías personalizadas).
-- **`bookings`** (unifica pasos de itinerario y reservas — vuelos, trenes, hoteles, restaurantes, entradas, notas, tareas visibles en el itinerario): `id`, `trip_id`, `city_id`, `day_id`, `category_id`, `status` (`idea`/`to_book`/`booked`/`paid`/`cancelled`), `title`, `start_at` (timestamptz), `end_at`, `timezone`, `location_name`, `address`, `lat`, `lng`, `details` (JSONB — nº de vuelo, localizador, asiento, etc., validado con Zod según la categoría), `price`, `currency`, `notes`, `order_index`, `source_document_id`, `extraction_confidence`, `created_by`, `updated_by`, `created_at`, `updated_at`.
-- **`documents`**: `id`, `trip_id`, `booking_id` (nullable), `storage_path`, `file_type`, `original_filename`, `uploaded_by`, `ocr_status`, `extracted_data` (JSONB bruto de la extracción, antes de revisión), `created_at`.
-- **`expenses`**: `id`, `trip_id`, `booking_id` (nullable), `paid_by`, `amount`, `currency`, `amount_in_trip_currency`, `exchange_rate`, `exchange_rate_date`, `category_id`, `city_id`, `date`, `payment_method`, `note`, `receipt_document_id`, `created_by`, `created_at`.
-- **`expense_splits`**: `id`, `expense_id`, `user_id`, `share_amount`, `settled`.
-- **`tasks`**: `id`, `trip_id`, `title`, `due_date`, `reminder_at`, `assigned_to`, `status` (`pending`/`done`/`skipped`), `related_booking_id`, `created_by`.
-- **`packing_items`**: `id`, `trip_id`, `user_id` (null = compartido), `label`, `category`, `checked`, `template_source`.
-- **`activity_log`**: `id`, `trip_id`, `user_id`, `action_type`, `entity_type`, `entity_id`, `summary_text`, `created_at`.
-- **`comments`**: `id`, `trip_id`, `entity_type`, `entity_id`, `user_id`, `body`, `created_at`.
+- **`booking_categories`**: `id`, `trip_id` (null = categoría global del usuario), `key`, `label`, `icon`, `color`, `is_custom`, `sort_order`, `hidden`, `field_schema` (JSONB, define campos propios de categorías personalizadas), `is_sensitive` (nuevo — marca categorías/campos excluidos por defecto al compartir, p. ej. localizador de vuelo).
+- **`bookings`** (unifica pasos de itinerario y reservas — vuelos, trenes, hoteles, restaurantes, entradas, notas, tareas visibles en el itinerario): `id`, `trip_id`, `city_id`, `day_id`, `category_id`, `status` (`idea`/`to_book`/`booked`/`paid`/`cancelled`), `title`, `start_at` (timestamptz), `end_at`, `timezone`, `location_name`, `address`, `lat`, `lng`, `details` (JSONB — nº de vuelo, localizador, asiento, etc., validado con Zod según la categoría), `price`, `currency`, `notes`, `order_index`, `source_document_id`, `extraction_confidence`, `created_at`, `updated_at`.
+- **`documents`**: `id`, `trip_id`, `booking_id` (nullable), `storage_path` (local: ruta en el sistema de archivos de la app), `file_type`, `original_filename`, `ocr_status`, `extracted_data` (JSONB bruto de la extracción, antes de revisión), `created_at`.
+- **`expenses`**: `id`, `trip_id`, `booking_id` (nullable), `paid_by_participant_id`, `amount`, `currency`, `amount_in_trip_currency`, `exchange_rate`, `exchange_rate_date`, `category_id`, `city_id`, `date`, `payment_method`, `note`, `receipt_document_id`, `created_at`.
+- **`expense_splits`**: `id`, `expense_id`, `participant_id` (antes `user_id` — ver `trip_participants` arriba), `share_amount`, `settled`.
+- **`tasks`**: `id`, `trip_id`, `title`, `due_date`, `reminder_at`, `assigned_to_participant_id`, `status` (`pending`/`done`/`skipped`), `related_booking_id`.
+- **`packing_items`**: `id`, `trip_id`, `participant_id` (null = compartido), `label`, `category`, `checked`, `template_source`.
+- **`activity_log`**: `id`, `trip_id`, `action_type`, `entity_type`, `entity_id`, `summary_text`, `created_at` — mientras el viaje es solo local, es simplemente un historial local de "deshacer"; cobra su sentido original ("Ana añadió un gasto") si/cuando un viaje recibe cambios de otro dispositivo tras compartirse.
+- **`comments`**: `id`, `trip_id`, `entity_type`, `entity_id`, `participant_id`, `body`, `created_at`.
 - **`polls`** / **`poll_votes`**: votaciones tipo "restaurante A o B".
-- **`notification_prefs`**: `user_id`, `trip_id`, `notification_type`, `enabled`.
 
 ### Índices clave
 
 - `bookings(trip_id, day_id, order_index)` para renderizar el itinerario rápido.
 - `expenses(trip_id, date)` y `expense_splits(expense_id)` para las gráficas.
-- `trip_members(user_id)` y `trip_members(trip_id)` para las comprobaciones de RLS (ambos sentidos).
 - `activity_log(trip_id, created_at desc)` para el feed de actividad.
 
-### Políticas RLS (patrón general, se detalla por tabla en las migraciones)
+### Políticas RLS
 
-- Toda tabla con `trip_id` exige `EXISTS (SELECT 1 FROM trip_members WHERE trip_id = x.trip_id AND user_id = auth.uid())` para `SELECT`.
-- `INSERT`/`UPDATE` exigen además `role IN ('owner','editor')`.
-- `DELETE` en `trips` exige `role = 'owner'`.
-- `personal_notes` en `trip_members` solo es legible por su propio `user_id`.
-- Tests automáticos (Fase 1 y repetidos en cada fase que toque el esquema): un `viewer` no puede escribir aunque llame directamente a la API; un usuario sin `trip_members` no ve nada del viaje.
+- **Local**: no aplica — no hay red de por medio, el control de acceso es "está en mi dispositivo".
+- **Supabase** (`profiles`/`allowed_emails`, ya aplicadas en Fase 1): descritas en la migración inicial — ver `CLAUDE.md`. El patrón para las tablas de compartir de la Fase 5 (p. ej. `share_sessions`) se diseña con esa fase, probablemente mucho más simple que el antiguo esquema `trip_members`/roles (ya no hace falta un rol persistente por viaje, solo validar que el código temporal no ha caducado).
 
 ## 5. Mapa de pantallas y navegación
 
@@ -138,7 +155,7 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 
 ## 6. Fases de desarrollo
 
-### Fase 1 — Cimientos
+### Fase 1 — Cimientos ✅ cerrada (2026-10-05)
 - **Objetivo**: proyecto arrancado, desplegable y autenticado de extremo a extremo, aunque sin funcionalidad de viajes todavía.
 - **Incluye**: scaffold Expo + TS estricto + Expo Router con la estructura modular por dominio descrita en `CLAUDE.md` (`src/features/`, `src/theme/`, `src/config/`, `src/lib/`); sistema de diseño base con la paleta **Atlas Blue** aprobada centralizada en `src/theme/tokens.ts` y las tipografías (Fraunces, Work Sans, IBM Plex Mono) auto-alojadas; proyecto Supabase desplegado (UE) con migraciones versionadas desde cero; autenticación por invitación/allowlist; RLS mínima (solo `profiles`/`allowed_emails`); CI en GitHub Actions (lint, typecheck, test, build); tarea de keep-alive y primera tarea de backups; primera build instalable (PWA desplegada + APK en GitHub Releases).
 - **Criterios de aceptación**: un usuario de la allowlist puede entrar con magic link; alguien fuera de la allowlist no puede; la web se despliega públicamente; el APK se instala en un Android real; CI está en verde.
@@ -147,12 +164,13 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Qué se podrá probar**: instalar la PWA en el iPhone desde Safari, instalar el APK en Android, entrar con el email invitado desde ambos y desde el navegador del ordenador.
 
 ### Fase 2 — Viajes e itinerario
-- **Objetivo**: gestión completa de viajes y el itinerario día a día, funcionando offline.
-- **Incluye**: "My trips" (crear/ver/editar/archivar/borrar con papelera de 30 días/exportar/importar JSON); asistente de creación paso a paso; itinerario con línea de tiempo por día, categorías de reserva por defecto (sin personalización todavía), vista "Now/Next"; modo offline con el motor de sincronización y resolución de conflictos de la sección 3.
-- **Criterios de aceptación**: crear un viaje de principio a fin sin conexión y que sincronice al recuperar red; reordenar pasos del itinerario; exportar e importar el mismo viaje sin pérdida de datos.
-- **Tests**: unitarios de fechas/zonas horarias, orden de rutas, exportación/importación; E2E de crear-editar-borrar un viaje.
-- **Riesgos**: la tecnología de sincronización elegida (sección 1, pendiente de verificar límites) condiciona el resto de fases — es la decisión técnica más delicada del proyecto.
-- **Qué se podrá probar**: crear el viaje "Italia" a mano con los datos del PDF de ejemplo, verlo en el móvil y en el navegador con los mismos datos, ponerse en modo avión y seguir editando.
+> ⚠️ Reescrita 2026-10-05 (pivote local-first): ya no depende de ninguna tecnología de sincronización ni de conexión a Supabase — eso se simplifica bastante respecto al plan original.
+- **Objetivo**: gestión completa de viajes y el itinerario día a día, **local en el dispositivo**, sin cuenta ni conexión.
+- **Incluye**: motor de almacenamiento local (SQLite nativo vía `expo-sqlite` / IndexedDB en web) con IDs generados en cliente; "My trips" (crear/ver/editar/archivar/borrar con papelera de 30 días/exportar/importar JSON); asistente de creación paso a paso; itinerario con línea de tiempo por día, categorías de reserva por defecto (sin personalización todavía), vista "Now/Next"; lista de `trip_participants` (nombres locales, sin cuenta) para más adelante repartir gastos/tareas.
+- **Criterios de aceptación**: crear un viaje completo sin tener conexión a internet en ningún momento del proceso; cerrar la app por completo y reabrirla sin perder nada; reordenar pasos del itinerario; exportar e importar el mismo viaje (mismo dispositivo y entre dos dispositivos distintos, vía archivo) sin pérdida de datos.
+- **Tests**: unitarios de fechas/zonas horarias, orden de rutas, exportación/importación; E2E de crear-editar-borrar un viaje enteramente offline (sin mockear red porque no debería haber ninguna llamada de red en esta fase).
+- **Riesgos**: elegir bien el motor de almacenamiento local desde el principio para que la Fase 5 (compartir) pueda construir encima sin reescribir el modelo de datos.
+- **Qué se podrá probar**: crear el viaje "Italia" a mano con los datos del PDF de ejemplo en modo avión de principio a fin, verlo en el móvil y en el navegador (cada uno con su propia copia local), cerrar y reabrir la app sin perder nada.
 
 ### Fase 3 — Importación de reservas
 - **Objetivo**: la función estrella — subir el PDF/capturas y que el viaje se genere solo.
@@ -171,21 +189,28 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Nota de diseño (pedida explícitamente por el usuario)**: la interacción del mapa/globo debe sentirse **al estilo Apple Maps** — transiciones de vuelo ("fly-to") suaves al tocar un país/ciudad/punto, zoom continuo sin saltos, inercia natural en los gestos. Es el referente de fluidez a igualar con MapLibre, por encima de lo ya descrito en la sección 7 de `docs/REQUISITOS.md`.
 - **Qué se podrá probar**: abrir el globo del viaje Italia, hacer zoom hasta una calle de Roma, tocar un punto y ver su ficha.
 
-### Fase 5 — Multiusuario
-- **Objetivo**: compartir un viaje entre varios móviles en tiempo real.
-- **Incluye**: invitaciones por enlace/QR/código corto, roles (owner/editor/viewer), sincronización en tiempo real vía Supabase Realtime, registro de actividad, notificaciones de cambios importantes, comentarios/reacciones/votaciones, ubicación compartida temporal opcional.
-- **Criterios de aceptación**: dos móviles y la web editando el mismo viaje ven los cambios del otro en segundos; un viewer no puede editar nada aunque lo intente desde la API directamente.
-- **Tests**: automatizados de permisos por rol (ya cubiertos parcialmente desde Fase 1, se completan aquí); prueba manual con dos dispositivos reales.
-- **Riesgos**: límites de conexiones simultáneas de Realtime en el plan gratuito (a verificar) con el círculo de hasta ~10-15 personas.
-- **Qué se podrá probar**: invitar a otra persona real, verla aparecer en el viaje, editar a la vez desde dos móviles y comprobar que no se pierde nada.
+### Fase 5 — Compartir (QR + código temporal)
+> ⚠️ Reescrita 2026-10-05 (pivote local-first). Sustituye por completo el antiguo diseño de "Multiusuario" basado en invitaciones persistentes + roles + Realtime. **Antes de implementar esta fase, hay que responder contigo las tres preguntas de diseño abiertas de la sección 3** (instantánea vs. en vivo, un receptor o varios, si los cambios del receptor vuelven al dueño) — determinan si hace falta algo de Supabase detrás o si es enteramente un traspaso de archivo disfrazado de QR.
+- **Objetivo**: enviar una copia filtrada de un viaje a otro dispositivo del círculo, sin cuentas ni registro.
+- **Incluye** (alcance exacto a cerrar al empezar la fase):
+  - Generación de un código corto + QR desde el dispositivo que comparte, con caducidad de 3 minutos.
+  - Pantalla de selección de qué compartir: por categoría, una a una o con botón "seleccionar todo".
+  - Los campos/categorías marcados `is_sensitive` (p. ej. nº de vuelo, localizador) se excluyen por defecto, con opción de incluirlos a propósito.
+  - Pantalla en el dispositivo receptor: escanear el QR o teclear el código, previsualizar lo que se va a recibir antes de aceptar.
+  - Registro de actividad local (quién compartió qué y cuándo), sin necesitar que el receptor tenga cuenta.
+- **Pospuesto de la sección original** (solo si las preguntas abiertas lo requieren): roles persistentes, comentarios/reacciones/votaciones en vivo, ubicación compartida — tienen sentido si se decide que un viaje compartido sigue "en vivo"; si se decide que es una instantánea puntual, se posponen indefinidamente o se descartan.
+- **Criterios de aceptación**: compartir un viaje real por QR entre dos móviles del círculo y que el receptor vea exactamente las categorías elegidas, con los campos sensibles no incluidos ausentes de verdad (no solo ocultos en la UI); el código deja de funcionar pasados los 3 minutos.
+- **Tests**: el código caduca de verdad a los 3 minutos; los campos excluidos no viajan en ningún payload (no es un filtro de pantalla, es una exclusión real en el origen); dos receptores distintos no pueden usar el mismo código si se diseña como "un solo uso" (a confirmar en las preguntas abiertas).
+- **Riesgos**: es la fase con más decisiones de producto todavía sin cerrar de todo el plan — no empezar a programarla sin esas tres respuestas.
+- **Qué se podrá probar**: compartir un viaje real entre dos móviles por QR y comprobar en el receptor que solo llegó lo elegido.
 
 ### Fase 6 — Gastos y organización
 - **Objetivo**: control económico del viaje y seguimiento de lo hecho/pendiente.
-- **Incluye**: registro rápido de gastos, multimoneda con Frankfurter, presupuesto con avisos, gráficas (donut/barras/línea), gastos compartidos con liquidación mínima de pagos, to-do con sugerencias desde el itinerario, checklist de equipaje con plantillas, progreso del viaje, resumen "Wrapped" al terminar.
-- **Criterios de aceptación**: repartir un gasto entre 3 personas y que la liquidación final sea matemáticamente correcta con el mínimo de transacciones; gráficas se actualizan al añadir un gasto.
+- **Incluye**: registro rápido de gastos, multimoneda con Frankfurter, presupuesto con avisos, gráficas (donut/barras/línea), gastos compartidos con liquidación mínima de pagos **entre `trip_participants` locales** (nombres escritos a mano, sin cuenta — ver pivote local-first de la sección 4), to-do con sugerencias desde el itinerario, checklist de equipaje con plantillas, progreso del viaje, resumen "Wrapped" al terminar.
+- **Criterios de aceptación**: repartir un gasto entre 3 participantes y que la liquidación final sea matemáticamente correcta con el mínimo de transacciones; gráficas se actualizan al añadir un gasto.
 - **Tests**: unitarios de reparto de gastos y conversión de moneda (incluye casos límite de redondeo).
-- **Riesgos**: ninguno mayor; es la fase más autocontenida.
-- **Qué se podrá probar**: añadir gastos reales del viaje Italia desde varios móviles y ver la liquidación final.
+- **Riesgos**: ninguno mayor; es la fase más autocontenida — y más sencilla que en el plan original, al no depender de que cada participante tenga cuenta propia.
+- **Qué se podrá probar**: añadir gastos reales del viaje Italia con varios participantes y ver la liquidación final, todo en un solo dispositivo.
 
 ### Fase 7 — Extras y pulido
 - **Objetivo**: funciones extra priorizadas de la sección 11 y pulido de diseño/rendimiento/accesibilidad en toda la app.
@@ -230,4 +255,4 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 
 ---
 
-*Próximos pasos: este plan está completo y a la espera de tu aprobación. Al aprobarlo, se crea la rama `fase-1-cimientos` y se empieza a programar. Antes de tocar pantallas, te enseño primero navegación, paletas de color y tipografías (sección 12 del encargo) para tu visto bueno, como pide el encargo.*
+*Próximos pasos: Fase 1 cerrada y verificada en producción (PWA + APK). Antes de empezar la Fase 2 de verdad, falta tu respuesta a las tres preguntas abiertas de la Fase 5 (sección 3) — no bloquean la Fase 2 en sí, pero sí conviene tenerlas claras pronto porque condicionan si el modelo de datos de compartir necesita Supabase detrás o no.*
