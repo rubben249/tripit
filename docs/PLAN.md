@@ -1,6 +1,6 @@
 # Plan — TripIt (app privada de itinerarios de viaje)
 
-> Estado: **completo, listo para tu aprobación**. Las investigaciones automáticas previstas se cancelaron a petición tuya; las secciones de coste cero y priorización de funciones se han completado con mi conocimiento actual en lugar de con una verificación web en vivo. Están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza (los límites de planes gratuitos cambian con el tiempo).
+> Estado: **aprobado**. Paleta **Atlas Blue**, tipografía (Fraunces + Work Sans + IBM Plex Mono) y navegación (pestañas abajo en móvil / barra lateral en web) confirmadas — ver la propuesta visual del 2026-10-04. Las secciones de coste cero y priorización de funciones se completaron con mi conocimiento actual en lugar de con una verificación web en vivo; están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza.
 
 ## 1. Resumen de decisiones
 
@@ -140,7 +140,7 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 
 ### Fase 1 — Cimientos
 - **Objetivo**: proyecto arrancado, desplegable y autenticado de extremo a extremo, aunque sin funcionalidad de viajes todavía.
-- **Incluye**: scaffold Expo + TS estricto + Expo Router; sistema de diseño base (paleta azul marino, tipografías, componentes básicos) con las variantes de paleta para elegir; proyecto Supabase desplegado (UE) con migraciones versionadas desde cero; autenticación por invitación/allowlist; RLS mínima (solo `profiles`/`allowed_emails`); CI en GitHub Actions (lint, typecheck, test, build); tarea de keep-alive y primera tarea de backups; primera build instalable (PWA desplegada + APK en GitHub Releases).
+- **Incluye**: scaffold Expo + TS estricto + Expo Router con la estructura modular por dominio descrita en `CLAUDE.md` (`src/features/`, `src/theme/`, `src/config/`, `src/lib/`); sistema de diseño base con la paleta **Atlas Blue** aprobada centralizada en `src/theme/tokens.ts` y las tipografías (Fraunces, Work Sans, IBM Plex Mono) auto-alojadas; proyecto Supabase desplegado (UE) con migraciones versionadas desde cero; autenticación por invitación/allowlist; RLS mínima (solo `profiles`/`allowed_emails`); CI en GitHub Actions (lint, typecheck, test, build); tarea de keep-alive y primera tarea de backups; primera build instalable (PWA desplegada + APK en GitHub Releases).
 - **Criterios de aceptación**: un usuario de la allowlist puede entrar con magic link; alguien fuera de la allowlist no puede; la web se despliega públicamente; el APK se instala en un Android real; CI está en verde.
 - **Tests**: RLS de `profiles`/`allowed_emails`, flujo de login E2E (Playwright web).
 - **Riesgos**: configurar correctamente RLS desde el principio (si se hace mal, hay que migrar datos después); límites de Supabase/EAS aún sin verificar en detalle (bloquea hasta tener la sección 2 cerrada).
@@ -167,7 +167,8 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Incluye**: MapLibre con globo 3D, encuadre automático, rutas entre ciudades (arcos geodésicos, estilos por tipo de transporte), niveles de detalle mundo/país/ciudad/calle, interacción (tocar para volar, ficha de punto), filtro por día, modo claro/oscuro del mapa.
 - **Criterios de aceptación**: 60 fps con el recorrido completo de Italia (7 ciudades, ~30 puntos); zoom continuo sin tirones desde el globo hasta nivel de calle en un móvil de gama media.
 - **Tests**: medición de fps real; prueba de geocodificación automática con corrección manual.
-- **Riesgos**: soporte real de globo 3D en web vs. móvil con teselas gratuitas — se confirma con la investigación en curso antes de empezar esta fase.
+- **Riesgos**: soporte real de globo 3D en web vs. móvil con teselas gratuitas — se verifica con una prueba de concepto pequeña al empezar esta fase, antes de construir el resto sobre ella.
+- **Nota de diseño (pedida explícitamente por el usuario)**: la interacción del mapa/globo debe sentirse **al estilo Apple Maps** — transiciones de vuelo ("fly-to") suaves al tocar un país/ciudad/punto, zoom continuo sin saltos, inercia natural en los gestos. Es el referente de fluidez a igualar con MapLibre, por encima de lo ya descrito en la sección 7 de `docs/REQUISITOS.md`.
 - **Qué se podrá probar**: abrir el globo del viaje Italia, hacer zoom hasta una calle de Roma, tocar un punto y ver su ficha.
 
 ### Fase 5 — Multiusuario
