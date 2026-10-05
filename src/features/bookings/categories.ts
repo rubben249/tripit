@@ -129,6 +129,14 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
 
 export const categoryKeys = Object.keys(bookingCategories) as CategoryKey[];
 
+/** Notes and tasks are bookings too (no day/city), but they have their own tabs — they never
+ * show up as a reservation or as a category to pick in the booking form. */
+export const reservationCategoryKeys = categoryKeys.filter(isReservationCategory);
+
+export function isReservationCategory(key: CategoryKey): boolean {
+  return key !== 'note' && key !== 'task';
+}
+
 export function getCategory(key: string): BookingCategory {
   return bookingCategories[key as CategoryKey] ?? bookingCategories.note;
 }

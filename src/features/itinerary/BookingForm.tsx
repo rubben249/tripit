@@ -8,7 +8,7 @@ import { DateField } from '@/components/DateField';
 import { TextField } from '@/components/TextField';
 import {
   bookingCategories,
-  categoryKeys,
+  reservationCategoryKeys,
   type BookingCategory,
   type CategoryKey,
 } from '@/features/bookings/categories';
@@ -22,8 +22,6 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 import { useCreateBooking, useDeleteBooking, useUpdateBooking } from './hooks';
 import { BOOKING_STATUS_OPTIONS, type Booking, type BookingStatus } from './types';
-
-const FORM_CATEGORY_KEYS = categoryKeys.filter((k) => k !== 'note');
 
 function timeOf(iso: string | null | undefined): string {
   return iso ? iso.slice(11, 16) : '';
@@ -158,7 +156,7 @@ export function BookingForm({
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', gap: theme.space.xs }}>
-          {FORM_CATEGORY_KEYS.map((key) => (
+          {reservationCategoryKeys.map((key) => (
             <CategoryChip
               key={key}
               category={bookingCategories[key]}

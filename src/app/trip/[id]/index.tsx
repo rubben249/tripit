@@ -8,6 +8,7 @@ import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
+import { isReservationCategory } from '@/features/bookings/categories';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
 import { useTrashTrip, useTrip, useUpdateTrip } from '@/features/trips/hooks';
 import { TripCountdown } from '@/features/trips/TripCountdown';
@@ -20,6 +21,9 @@ export default function TripOverviewScreen() {
   const { data: trip } = useTrip(id);
   const { data: cities } = useCities(id);
   const { data: bookings } = useBookings(id);
+  const reservationCount = (bookings ?? []).filter((b) =>
+    isReservationCategory(b.categoryKey),
+  ).length;
   const addCity = useAddCity(id);
   const trashTrip = useTrashTrip();
   const updateTrip = useUpdateTrip(id);
@@ -122,7 +126,7 @@ export default function TripOverviewScreen() {
           </Text>
         )}
         <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
-          {cities?.length ?? 0} cities · {bookings?.length ?? 0} bookings · {trip.defaultCurrency}
+          {cities?.length ?? 0} cities · {reservationCount} bookings · {trip.defaultCurrency}
         </Text>
         <TripCountdown trip={trip} color={theme.colors.accent} size="md" />
       </View>

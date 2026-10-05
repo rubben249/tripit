@@ -2,13 +2,11 @@ import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
-import { bookingCategories, categoryKeys } from '@/features/bookings/categories';
+import { bookingCategories, reservationCategoryKeys } from '@/features/bookings/categories';
 import { BookingCard } from '@/features/itinerary/BookingCard';
 import { useBookings } from '@/features/itinerary/hooks';
 import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
-
-const RESERVATION_CATEGORY_KEYS = categoryKeys.filter((k) => k !== 'note');
 
 /** All bookings at a glance, grouped by category instead of by day — flights, hotels, tickets etc.
  * Tap any card to edit it; it's the same booking shown on its Itinerary day, so edits here show up
@@ -31,12 +29,14 @@ export default function ReservationsScreen() {
     );
   }
 
-  const groups = RESERVATION_CATEGORY_KEYS.map((key) => ({
-    category: bookingCategories[key],
-    bookings: bookings
-      .filter((b) => b.categoryKey === key)
-      .sort((a, b) => (a.startAt ?? '').localeCompare(b.startAt ?? '')),
-  })).filter((group) => group.bookings.length > 0);
+  const groups = reservationCategoryKeys
+    .map((key) => ({
+      category: bookingCategories[key],
+      bookings: bookings
+        .filter((b) => b.categoryKey === key)
+        .sort((a, b) => (a.startAt ?? '').localeCompare(b.startAt ?? '')),
+    }))
+    .filter((group) => group.bookings.length > 0);
 
   if (groups.length === 0) {
     return (

@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: '/people', label: 'People' },
   { href: '/expenses', label: 'Expenses' },
   { href: '/notes', label: 'Notes' },
+  { href: '/tasks', label: 'Tasks' },
 ] as const;
 
 export default function TripLayout() {
@@ -64,6 +65,7 @@ const TripTabLink = forwardRef<
   return (
     <Pressable
       ref={ref}
+      {...pressableProps}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
@@ -73,7 +75,6 @@ const TripTabLink = forwardRef<
         backgroundColor: active ? theme.colors.surfaceAlt : 'transparent',
         opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
       })}
-      {...pressableProps}
     >
       <Text
         style={[

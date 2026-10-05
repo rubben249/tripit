@@ -38,6 +38,9 @@ export default function NotesScreen() {
     router.push(`/trip/${id}/notes/${created.id}`);
   };
 
+  // Avoid flashing the empty-state text while the local database is still opening.
+  if (!bookings) return null;
+
   return (
     <Screen scroll>
       {notes.length === 0 ? (
@@ -89,6 +92,7 @@ const NoteRow = forwardRef<
   return (
     <Pressable
       ref={ref}
+      {...pressableProps}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
@@ -100,7 +104,6 @@ const NoteRow = forwardRef<
         gap: 4,
         opacity: pressed ? 0.75 : hovered ? 0.92 : 1,
       })}
-      {...pressableProps}
     >
       <Text style={[theme.type.title, { fontSize: 15, color: theme.colors.text }]}>{title}</Text>
       {preview ? (

@@ -35,3 +35,15 @@ export const CARRIER_LABEL: Partial<Record<CategoryKey, string>> = {
   bus: 'Bus line',
   boat_ferry: 'Ferry / vessel',
 };
+
+/** Tasks: just a pending/done flag, kept in `details` rather than reusing
+ * `status` since that field already means something else (idea/to
+ * book/booked/paid/cancelled) for every other category. */
+export interface TaskDetails {
+  done?: boolean;
+}
+
+export function asTaskDetails(details: Record<string, unknown> | null): TaskDetails {
+  if (!details) return {};
+  return { done: details.done === true };
+}

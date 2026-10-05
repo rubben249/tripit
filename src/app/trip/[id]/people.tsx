@@ -37,8 +37,8 @@ export default function PeopleScreen() {
   return (
     <Screen scroll>
       <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-        Names for splitting expenses and assigning tasks — no account needed. Real sharing between
-        devices is coming in a later phase.
+        Everyone coming on this trip — no account needed. Real sharing between devices is coming in
+        a later phase.
       </Text>
 
       {(participants ?? []).map((p) => (

@@ -40,54 +40,71 @@ export default function ItineraryScreen() {
   );
 }
 
-const DayRow = forwardRef<
+function DayRow({
+  tripId,
+  day,
+  bookings,
+}: {
+  tripId: string;
+  day: ItineraryDay;
+  bookings: Booking[];
+}) {
+  return (
+    <Link href={`/trip/${tripId}/day/${day.id}` as never} asChild>
+      <DayRowLink day={day} bookings={bookings} />
+    </Link>
+  );
+}
+
+// Link asChild (Radix Slot) merges styles with an object spread, which silently drops a
+// function-style on its direct child — so the Pressable lives one level down, behind forwardRef,
+// and spreads Link's props before its own style.
+const DayRowLink = forwardRef<
   View,
-  Omit<PressableProps, 'style'> & { tripId: string; day: ItineraryDay; bookings: Booking[] }
->(function DayRowInner({ tripId, day, bookings, ...pressableProps }, ref) {
+  Omit<PressableProps, 'style'> & { day: ItineraryDay; bookings: Booking[] }
+>(function DayRowLinkInner({ day, bookings, ...pressableProps }, ref) {
   const theme = useTheme();
   const { hovered, onHoverIn, onHoverOut } = useHoverable();
   const highlights = getDayHighlights(day, bookings);
 
   return (
-    <Link href={`/trip/${tripId}/day/${day.id}` as never} asChild>
-      <Pressable
-        ref={ref}
-        onHoverIn={onHoverIn}
-        onHoverOut={onHoverOut}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: theme.space.md,
-          padding: theme.space.lg,
-          borderRadius: theme.radius.md,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          opacity: pressed ? 0.75 : hovered ? 0.92 : 1,
-        })}
-        {...pressableProps}
-      >
-        <View style={{ flex: 1, gap: 6 }}>
-          <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
-            Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
+    <Pressable
+      ref={ref}
+      {...pressableProps}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.space.md,
+        padding: theme.space.lg,
+        borderRadius: theme.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+        opacity: pressed ? 0.75 : hovered ? 0.92 : 1,
+      })}
+    >
+      <View style={{ flex: 1, gap: 6 }}>
+        <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
+          Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
+        </Text>
+        {highlights.length === 0 ? (
+          <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
+            Nothing planned yet
           </Text>
-          {highlights.length === 0 ? (
-            <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
-              Nothing planned yet
-            </Text>
-          ) : (
-            highlights.map((h) => (
-              <View key={h.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name={h.icon} size={16} color={h.color} />
-                <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
-                  {h.text}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-        <Ionicons name="chevron-forward" size={22} color={theme.colors.textMuted} />
-      </Pressable>
-    </Link>
+        ) : (
+          highlights.map((h) => (
+            <View key={h.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name={h.icon} size={16} color={h.color} />
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
+                {h.text}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={22} color={theme.colors.textMuted} />
+    </Pressable>
   );
 });

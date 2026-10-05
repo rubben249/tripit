@@ -42,6 +42,7 @@ const SettingsRow = forwardRef<
   return (
     <Pressable
       ref={ref}
+      {...pressableProps}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
@@ -56,7 +57,6 @@ const SettingsRow = forwardRef<
         backgroundColor: theme.colors.surface,
         opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
       })}
-      {...pressableProps}
     >
       <Text style={[theme.type.body, { color: theme.colors.text }]}>{label}</Text>
       <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>{value}</Text>
