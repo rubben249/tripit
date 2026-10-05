@@ -44,22 +44,29 @@ def vertical_gradient(size, top, bottom):
 
 
 def draw_plane(draw, cx, cy, scale, color):
-    """Single-silhouette swept jet with a forked tail (no overlap seams)."""
+    """Single-silhouette calm commercial airliner (long nose, gentle swept
+    main wings, smaller tail wings, shallow tail notch) — not a fighter jet."""
     pts = [
         (0, -1.00),  # nose tip
-        (0.055, -0.50),  # right of nose base
-        (0.95, 0.40),  # right wingtip
-        (0.66, 0.47),  # right wing trailing inner
-        (0.28, 0.14),  # pull in toward tail root
-        (0.30, 0.46),  # right fin tip
-        (0.08, 0.22),  # right side of tail notch
-        (0, 0.32),  # tail notch (center V)
-        (-0.08, 0.22),  # left side of tail notch
-        (-0.30, 0.46),  # left fin tip
-        (-0.28, 0.14),  # pull in toward tail root
-        (-0.66, 0.47),  # left wing trailing inner
-        (-0.95, 0.40),  # left wingtip
-        (-0.055, -0.50),  # left of nose base
+        (0.04, -0.60),  # right of nose
+        (0.90, 0.00),  # right main wingtip (barely swept — commercial, not delta)
+        (0.62, 0.15),  # right main wing trailing edge
+        (0.08, -0.05),  # back to fuselage
+        (0.08, 0.35),  # fuselage right, down to the tail section
+        (0.26, 0.48),  # right tail wingtip (small)
+        (0.16, 0.52),  # right tail wing trailing edge
+        (0.05, 0.42),  # back to fuselage near tail
+        (0.05, 0.58),  # fuselage end, right
+        (0, 0.50),  # shallow tail notch (gentle, not a deep fork)
+        (-0.05, 0.58),  # fuselage end, left
+        (-0.05, 0.42),
+        (-0.16, 0.52),  # left tail wing trailing edge
+        (-0.26, 0.48),  # left tail wingtip
+        (-0.08, 0.35),
+        (-0.08, -0.05),
+        (-0.62, 0.15),  # left main wing trailing edge
+        (-0.90, 0.00),  # left main wingtip
+        (-0.04, -0.60),
     ]
     draw.polygon(poly(cx, cy, scale, 0, pts), fill=color)
     return poly(cx, cy, scale, 0, pts)
@@ -115,7 +122,7 @@ def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=T
     )
 
     # --- Motion lines: three clean parallel strokes trailing the left wingtip ---
-    wing_tip = plane_pts[12]  # (-0.95, 0.40) point, already in canvas coords
+    wing_tip = plane_pts[18]  # left main wingtip, already in canvas coords
     direction = (-0.82, 0.42)  # down-left
     perp = (-direction[1], direction[0])
     for i, (length, width, col) in enumerate(
