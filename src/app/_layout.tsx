@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import Head from 'expo-router/head';
 import {
   Redirect,
   Stack,
@@ -11,6 +12,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { env } from '@/config/env';
 import { fontAssets } from '@/theme/tokens';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
@@ -80,6 +82,14 @@ function RootLayoutNav() {
 
   return (
     <NavigationThemeProvider value={navigationTheme}>
+      {/* Default document title (web). Without one, iOS "Add to Home Screen"
+          has nothing to name the bookmark and falls back to a generic
+          lettered icon even when apple-touch-icon is set. Individual
+          screens can render their own <Head><title>...</title></Head> to
+          override this later. */}
+      <Head>
+        <title>{env.appName}</title>
+      </Head>
       {!loading && session && onLoginScreen ? <Redirect href="/" /> : null}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
