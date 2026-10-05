@@ -71,12 +71,16 @@ function RootLayoutNav() {
     },
   };
 
-  const inAuthFlow = segments[0] === 'login' || segments[0] === 'auth';
+  // No forced login: trips live on-device by default (see CLAUDE.md "Modelo
+  // local-first"). /login stays reachable but unused for now — it's ready
+  // for whenever sharing needs an account, which will likely be a
+  // short-lived QR/code pairing flow rather than email, per product
+  // direction captured 2026-10-05.
+  const onLoginScreen = segments[0] === 'login';
 
   return (
     <NavigationThemeProvider value={navigationTheme}>
-      {!loading && !session && !inAuthFlow ? <Redirect href="/login" /> : null}
-      {!loading && session && segments[0] === 'login' ? <Redirect href="/" /> : null}
+      {!loading && session && onLoginScreen ? <Redirect href="/" /> : null}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Add' }} />

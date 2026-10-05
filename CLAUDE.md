@@ -7,6 +7,15 @@ Contexto persistente del proyecto para que no se pierda entre sesiones. El encar
 - Conversación con el usuario: **siempre en español**.
 - Interfaz de la app, código, comentarios, nombres de commits y de ramas: **siempre en inglés**.
 
+## Decisión de producto — local-first sin login obligatorio (2026-10-05)
+
+Pivote respecto al modelo original de "círculo cerrado con cuenta por email": **los viajes viven en el dispositivo por defecto, sin necesitar cuenta ni email**. Decisión explícita del usuario, motivada en parte por el límite de envío de emails del plan gratuito de Supabase (muy bajo sin SMTP propio) y en parte porque simplifica el uso real (cada móvil tiene sus viajes).
+
+- El login por magic link (`/login`, `AuthProvider`, el Auth Hook de allowlist) **se queda construido y funcionando, pero no se exige** — `src/app/_layout.tsx` ya no redirige a `/login` si no hay sesión.
+- Compartir un viaje entre dispositivos **no usará cuentas de email**: el plan es un código QR + código corto temporal (caduca a los 3 minutos), generado en el momento de compartir. Pendiente de diseñar (Fase 2): modelo de datos de la sesión de código temporal, qué pasa al caducar, cómo el dispositivo receptor importa los datos.
+- Al compartir, el usuario podrá **elegir qué categorías de datos compartir**, una a una o con un botón "seleccionar todo" — y hay información sensible (p. ej. número de vuelo) que debe poder excluirse por defecto o a voluntad.
+- Esto implica que el almacenamiento principal de un viaje pasa a ser **local primero** (no solo "cache offline de lo que hay en Supabase", sino la fuente de verdad en el dispositivo), con Supabase quedando como backend opcional para cuando se comparte/sincroniza. Hay que revisar el modelo de datos de `docs/PLAN.md` (sección 4) con esto en mente antes de construir la Fase 2 a fondo.
+
 ## Regla de coste cero (no negociable)
 
 Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando sea posible. Antes de añadir cualquier servicio nuevo: comprobar sus límites actuales, si pide tarjeta, y qué pasa al superarlos. Si no hay opción gratuita razonable, preguntar al usuario antes de usarlo — nunca asumir un gasto.
