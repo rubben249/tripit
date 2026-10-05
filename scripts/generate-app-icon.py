@@ -1,10 +1,10 @@
 """Regenerates assets/images/{icon,favicon,splash-icon,android-icon-*}.png
-— the suitcase + paper-plane mark in the Atlas Blue palette. Pure PIL
-(no SVG renderer needed). Run with: python3 scripts/generate-app-icon.py
-To tweak the design, adjust draw_suitcase_and_plane() and rerun; tune the
-per-output `scale` so content stays inside Android's circular safe zone
-(see the adaptive-icon calls below) and doesn't crowd the canvas edges
-on icon.png.
+— a circular badge with a merged plane + suitcase mark on a deep navy
+vertical gradient. Pure PIL (no SVG renderer needed). Run with:
+    python3 scripts/generate-app-icon.py
+To tweak the design, adjust draw_badge() / gradient() and rerun; keep mark
+content inside the ring for Android's circular adaptive-icon safe zone
+(see the `scale` passed to each output call below).
 """
 
 import math
@@ -12,155 +12,164 @@ import os
 
 from PIL import Image, ImageDraw
 
-NAVY = (28, 43, 69, 255)       # #1C2B45 brand.ink
-CREAM = (246, 243, 236, 255)   # #F6F3EC brand.paper
-BRASS = (184, 137, 59, 255)    # #B8893B brand.accent
-BRASS_DARK = (150, 108, 42, 255)
+NAVY_TOP = (28, 43, 69, 255)  # #1C2B45 brand.ink
+NAVY_BOTTOM = (6, 9, 17, 255)  # near-black navy
+CREAM = (246, 243, 236, 255)  # #F6F3EC brand.paper
+BRASS = (184, 137, 59, 255)  # #B8893B brand.accent
 WHITE = (255, 255, 255, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
 CANVAS = 1024
 
 
-def draw_suitcase_and_plane(draw, cx, cy, scale, mark_color, strap_color, mono=False):
-    """Draw the suitcase+plane mark centered at (cx, cy). scale=1 -> suitcase ~560px wide."""
+def poly(cx, cy, scale, angle_deg, pts):
+    """Rotate+scale+translate a list of (x,y) unit points around (cx,cy)."""
+    a = math.radians(angle_deg)
+    out = []
+    for x, y in pts:
+        dx, dy = x * scale, y * scale
+        rx = dx * math.cos(a) - dy * math.sin(a)
+        ry = dx * math.sin(a) + dy * math.cos(a)
+        out.append((cx + rx, cy + ry))
+    return out
+
+
+def vertical_gradient(size, top, bottom):
+    img = Image.new("RGBA", (1, size), TRANSPARENT)
+    for y in range(size):
+        t = y / (size - 1)
+        px = tuple(int(top[c] + (bottom[c] - top[c]) * t) for c in range(4))
+        img.putpixel((0, y), px)
+    return img.resize((size, size))
+
+
+def draw_plane(draw, cx, cy, scale, color):
+    """Single-silhouette swept jet with a forked tail (no overlap seams)."""
+    pts = [
+        (0, -1.00),  # nose tip
+        (0.055, -0.50),  # right of nose base
+        (0.95, 0.40),  # right wingtip
+        (0.66, 0.47),  # right wing trailing inner
+        (0.28, 0.14),  # pull in toward tail root
+        (0.30, 0.46),  # right fin tip
+        (0.08, 0.22),  # right side of tail notch
+        (0, 0.32),  # tail notch (center V)
+        (-0.08, 0.22),  # left side of tail notch
+        (-0.30, 0.46),  # left fin tip
+        (-0.28, 0.14),  # pull in toward tail root
+        (-0.66, 0.47),  # left wing trailing inner
+        (-0.95, 0.40),  # left wingtip
+        (-0.055, -0.50),  # left of nose base
+    ]
+    draw.polygon(poly(cx, cy, scale, 0, pts), fill=color)
+    return poly(cx, cy, scale, 0, pts)
+
+
+def draw_badge(draw, cx, cy, scale, ring_color, mark_color, accent_color, ring=True):
+    """scale=1 -> ring radius ~460px (fits a 1024 canvas with margin)."""
     s = scale
 
-    # --- Suitcase body ---
-    body_w, body_h = 560 * s, 400 * s
-    body_left = cx - body_w / 2
-    body_top = cy - body_h / 2 + 40 * s
-    body_right = cx + body_w / 2
-    body_bottom = body_top + body_h
-    radius = 48 * s
+    if ring:
+        r = 460 * s
+        w = 26 * s
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=ring_color, width=int(w))
+
+    plane_scale = 300 * s
+    plane_cx, plane_cy = cx - 10 * s, cy - 95 * s
+    plane_pts = draw_plane(draw, plane_cx, plane_cy, plane_scale, mark_color)
+
+    # --- Suitcase, overlapping the plane's tail slightly, lower-right ---
+    case_scale = 150 * s
+    case_cx, case_cy = cx + 90 * s, cy + 195 * s
+    body_w, body_h = 1.5 * case_scale, 1.05 * case_scale
+    radius = 0.22 * case_scale
     draw.rounded_rectangle(
-        [body_left, body_top, body_right, body_bottom], radius=radius, fill=mark_color
+        [case_cx - body_w / 2, case_cy - body_h / 2, case_cx + body_w / 2, case_cy + body_h / 2],
+        radius=radius,
+        fill=mark_color,
     )
-
-    # --- Handle (stadium arc on top) ---
-    handle_w = 220 * s
-    handle_h = 150 * s
-    handle_cx = cx
-    handle_bottom = body_top + 30 * s
-    handle_top = handle_bottom - handle_h
-    stroke = 36 * s
-    draw.rounded_rectangle(
-        [handle_cx - handle_w / 2, handle_top, handle_cx + handle_w / 2, handle_bottom],
-        radius=handle_w / 2,
-        outline=mark_color,
-        width=int(stroke),
-    )
-
-    # --- Horizontal belt strap across the middle ---
-    strap_h = 70 * s
-    strap_top = cy - strap_h / 2 + 20 * s
-    strap_bottom = strap_top + strap_h
-    draw.rectangle([body_left, strap_top, body_right, strap_bottom], fill=strap_color)
-
-    # buckle in the center of the strap
-    buckle_w, buckle_h = 90 * s, strap_h + 28 * s
+    # handle: a clean open stadium ring sitting on top
+    handle_w, handle_h = 0.62 * case_scale, 0.5 * case_scale
+    handle_bottom = case_cy - body_h / 2 + 10 * s
     draw.rounded_rectangle(
         [
-            cx - buckle_w / 2,
-            strap_top - 14 * s,
-            cx + buckle_w / 2,
-            strap_top - 14 * s + buckle_h,
+            case_cx - handle_w / 2,
+            handle_bottom - handle_h,
+            case_cx + handle_w / 2,
+            handle_bottom,
         ],
-        radius=14 * s,
-        outline=strap_color,
-        width=int(10 * s),
-        fill=mark_color if not mono else None,
+        radius=handle_w / 2,
+        outline=mark_color,
+        width=max(1, int(0.11 * case_scale)),
+    )
+    # strap accent
+    strap_h = 0.22 * case_scale
+    draw.rectangle(
+        [
+            case_cx - body_w / 2,
+            case_cy - strap_h / 2,
+            case_cx + body_w / 2,
+            case_cy + strap_h / 2,
+        ],
+        fill=accent_color,
     )
 
-    # --- Two latches near the top of the body ---
-    latch_w, latch_h = 54 * s, 40 * s
-    latch_y = body_top + 46 * s
-    for dx in (-150 * s, 150 * s):
-        draw.rounded_rectangle(
-            [cx + dx - latch_w / 2, latch_y, cx + dx + latch_w / 2, latch_y + latch_h],
-            radius=10 * s,
-            fill=strap_color,
-        )
-
-    # --- Small paper-plane, departing up and to the right ---
-    plane_cx = cx + 275 * s
-    plane_cy = cy - 250 * s
-    plane_scale = 150 * s
-    angle = math.radians(-38)
-
-    def rot(px, py):
-        dx, dy = px * plane_scale, py * plane_scale
-        rx = dx * math.cos(angle) - dy * math.sin(angle)
-        ry = dx * math.sin(angle) + dy * math.cos(angle)
-        return (plane_cx + rx, plane_cy + ry)
-
-    # simple dart/paper-plane silhouette (nose, two wing tips, tail notch)
-    plane_pts = [
-        rot(0.9, 0),
-        rot(-0.75, 0.42),
-        rot(-0.42, 0.08),
-        rot(-0.75, -0.42),
-    ]
-    draw.polygon(plane_pts, fill=strap_color)
-    # centerfold accent line
-    draw.line([rot(0.9, 0), rot(-0.55, 0)], fill=mark_color, width=max(1, int(8 * s)))
-
-    # dashed flight trail behind the plane, curving toward the suitcase handle
-    trail_start = rot(-0.6, 0.05)
-    trail_end = (handle_cx - 10 * s, handle_top + 10 * s)
-    n_dashes = 5
-    for i in range(1, n_dashes + 1):
-        t = i / (n_dashes + 1.4)
-        # slight curve via quadratic bezier-ish interpolation
-        mx = (trail_start[0] + trail_end[0]) / 2 + 60 * s
-        my = (trail_start[1] + trail_end[1]) / 2
-        x = (1 - t) ** 2 * trail_start[0] + 2 * (1 - t) * t * mx + t**2 * trail_end[0]
-        y = (1 - t) ** 2 * trail_start[1] + 2 * (1 - t) * t * my + t**2 * trail_end[1]
-        r = 9 * s
-        draw.ellipse([x - r, y - r, x + r, y + r], fill=strap_color)
-
-
-def new_canvas(bg):
-    return Image.new("RGBA", (CANVAS, CANVAS), bg)
+    # --- Motion lines: three clean parallel strokes trailing the left wingtip ---
+    wing_tip = plane_pts[12]  # (-0.95, 0.40) point, already in canvas coords
+    direction = (-0.82, 0.42)  # down-left
+    perp = (-direction[1], direction[0])
+    for i, (length, width, col) in enumerate(
+        [
+            (175 * s, 28 * s, accent_color),
+            (130 * s, 20 * s, mark_color),
+            (85 * s, 13 * s, accent_color),
+        ]
+    ):
+        offset = (28 * s) * (i + 1)
+        start = (wing_tip[0] + perp[0] * offset * 0.3, wing_tip[1] + perp[1] * offset * 0.3 + 10 * s)
+        start = (start[0] - 10 * s * i, start[1] + 46 * s * i)
+        end = (start[0] + direction[0] * length, start[1] + direction[1] * length)
+        draw.line([start, end], fill=col, width=int(width))
 
 
 def save(img, path):
-    img.save(path)
+    img.convert("RGBA").save(path)
     print("wrote", path, img.size)
 
 
 out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "images")
 
-# 1) icon.png — full bleed navy background + cream suitcase / brass accents
-img = new_canvas(NAVY)
+# 1) icon.png — deep navy vertical gradient background + cream mark, brass accents
+img = vertical_gradient(CANVAS, NAVY_TOP, NAVY_BOTTOM)
 d = ImageDraw.Draw(img)
-draw_suitcase_and_plane(d, CANVAS / 2 - 40, CANVAS / 2 + 30, 1.1, CREAM, BRASS)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 1.0, CREAM, CREAM, BRASS)
 save(img, f"{out}/icon.png")
 
-# 2) favicon.png — small version, same composition
+# 2) favicon.png
 favicon = img.resize((196, 196), Image.LANCZOS)
 save(favicon, f"{out}/favicon.png")
 
-# 3) android-icon-background.png — flat navy
-bg_img = new_canvas(NAVY)
+# 3) android-icon-background.png — same gradient, no mark
+bg_img = vertical_gradient(CANVAS, NAVY_TOP, NAVY_BOTTOM)
 save(bg_img, f"{out}/android-icon-background.png")
 
-# 4) android-icon-foreground.png — transparent, mark scaled into the adaptive-icon safe zone (~66%)
-fg_img = new_canvas(TRANSPARENT)
+# 4) android-icon-foreground.png — transparent, scaled into the circular safe zone, no ring
+#    (the ring would double up visually with the adaptive-icon's own circular crop)
+fg_img = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
 d = ImageDraw.Draw(fg_img)
-draw_suitcase_and_plane(d, CANVAS / 2, CANVAS / 2 + 10, 0.52, CREAM, BRASS)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, CREAM, CREAM, BRASS, ring=False)
 save(fg_img, f"{out}/android-icon-foreground.png")
 
-# 5) android-icon-monochrome.png — transparent, single-color (white) silhouette, same safe zone
-mono_img = new_canvas(TRANSPARENT)
+# 5) android-icon-monochrome.png — transparent, single-color white silhouette
+mono_img = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
 d = ImageDraw.Draw(mono_img)
-draw_suitcase_and_plane(d, CANVAS / 2, CANVAS / 2 + 10, 0.52, WHITE, WHITE, mono=True)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 0.62, WHITE, WHITE, WHITE, ring=False)
 save(mono_img, f"{out}/android-icon-monochrome.png")
 
-# 6) splash-icon.png — transparent, generously sized mark for the splash screen (contain mode)
-splash_img = new_canvas(TRANSPARENT)
+# 6) splash-icon.png — transparent, mark + ring, generously sized for "contain" mode
+splash_img = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
 d = ImageDraw.Draw(splash_img)
-draw_suitcase_and_plane(d, CANVAS / 2, CANVAS / 2 + 10, 0.85, CREAM, BRASS)
+draw_badge(d, CANVAS / 2, CANVAS / 2, 0.95, CREAM, CREAM, BRASS)
 save(splash_img, f"{out}/splash-icon.png")
 
 print("done")
