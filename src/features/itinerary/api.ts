@@ -1,3 +1,4 @@
+import { equalSplit } from '@/features/expenses/settlement';
 import { getDb } from '@/lib/db/client';
 import { generateId } from '@/lib/id';
 import { eachDateBetween } from '@/lib/dates';
@@ -6,6 +7,7 @@ import type {
   Booking,
   City,
   Expense,
+  ExpenseSplit,
   ItineraryDay,
   NewBookingInput,
   NewCityInput,
@@ -323,6 +325,7 @@ interface ExpenseRow {
   title: string;
   amount: number;
   currency: string;
+  paid_by_participant_id: string | null;
   created_at: string;
 }
 
@@ -334,7 +337,24 @@ function rowToExpense(row: ExpenseRow): Expense {
     title: row.title,
     amount: row.amount,
     currency: row.currency,
+    paidByParticipantId: row.paid_by_participant_id,
     createdAt: row.created_at,
+  };
+}
+
+interface ExpenseSplitRow {
+  id: string;
+  expense_id: string;
+  participant_id: string;
+  share_amount: number;
+}
+
+function rowToExpenseSplit(row: ExpenseSplitRow): ExpenseSplit {
+  return {
+    id: row.id,
+    expenseId: row.expense_id,
+    participantId: row.participant_id,
+    shareAmount: row.share_amount,
   };
 }
 
@@ -352,15 +372,30 @@ export async function createExpense(tripId: string, input: NewExpenseInput): Pro
   const id = generateId();
   const now = new Date().toISOString();
   await db.runAsync(
-    'insert into expenses (id, trip_id, category_key, title, amount, currency, created_at) values (?, ?, ?, ?, ?, ?, ?)',
+    `insert into expenses (id, trip_id, category_key, title, amount, currency, paid_by_participant_id, created_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     tripId,
     input.categoryKey,
     input.title,
     input.amount,
     input.currency,
+    input.paidByParticipantId ?? null,
     now,
   );
+
+  if (input.splitParticipantIds && input.splitParticipantIds.length > 0) {
+    for (const share of equalSplit(input.amount, input.splitParticipantIds)) {
+      await db.runAsync(
+        'insert into expense_splits (id, expense_id, participant_id, share_amount) values (?, ?, ?, ?)',
+        generateId(),
+        id,
+        share.participantId,
+        share.shareAmount,
+      );
+    }
+  }
+
   return {
     id,
     tripId,
@@ -368,6 +403,7 @@ export async function createExpense(tripId: string, input: NewExpenseInput): Pro
     title: input.title,
     amount: input.amount,
     currency: input.currency,
+    paidByParticipantId: input.paidByParticipantId ?? null,
     createdAt: now,
   };
 }
@@ -375,4 +411,16 @@ export async function createExpense(tripId: string, input: NewExpenseInput): Pro
 export async function deleteExpense(id: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('delete from expenses where id = ?', id);
+}
+
+/** All splits across every expense in the trip — fetched in one query (joined through expenses) rather than per-expense, since the settlement view needs the whole trip's splits at once. */
+export async function listExpenseSplits(tripId: string): Promise<ExpenseSplit[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<ExpenseSplitRow>(
+    `select expense_splits.* from expense_splits
+     join expenses on expenses.id = expense_splits.expense_id
+     where expenses.trip_id = ?`,
+    tripId,
+  );
+  return rows.map(rowToExpenseSplit);
 }

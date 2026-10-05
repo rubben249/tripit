@@ -1,6 +1,6 @@
 # Plan — TripIt (app privada de itinerarios de viaje)
 
-> Estado: **Fase 1 cerrada (2026-10-05)**. Paleta **Atlas Blue**, tipografía (Fraunces + Work Sans + IBM Plex Mono) y navegación (pestañas abajo en móvil / barra lateral en web) confirmadas — ver la propuesta visual del 2026-10-04. Las secciones de coste cero y priorización de funciones se completaron con mi conocimiento actual en lugar de con una verificación web en vivo; están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza.
+> Estado: **Fases 1 y 2 cerradas, Fase 6 iniciada (2026-10-05)**. Paleta **Atlas Umber** (marrones, repintada 2026-10-05 sobre la Atlas Blue original), tipografía (Fraunces + Work Sans + IBM Plex Mono) y navegación (pestañas abajo en móvil / barra lateral en web) confirmadas. La Fase 2 se amplió bastante más allá de su alcance original — ver su entrada abajo — adelantando trozos de las Fases 3 y 6. Las secciones de coste cero y priorización de funciones se completaron con mi conocimiento actual en lugar de con una verificación web en vivo; están marcadas con ⚠️ allí donde convenga reconfirmar el dato exacto contra la documentación oficial en el momento de implementar esa pieza.
 >
 > ⚠️ **Pivote del 2026-10-05 — modelo local-first**: durante la Fase 1 se renegoció el requisito de sincronización continua por cuenta (ver nota al principio de `docs/REQUISITOS.md`). Las secciones 3 y 4 de aquí abajo, y las Fases 2 y 5, están actualizadas para reflejarlo. El resto del documento (Fases 1, 3, 4, 6, 7, 8) sigue vigente tal cual.
 
@@ -163,14 +163,15 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Riesgos**: configurar correctamente RLS desde el principio (si se hace mal, hay que migrar datos después); límites de Supabase/EAS aún sin verificar en detalle (bloquea hasta tener la sección 2 cerrada).
 - **Qué se podrá probar**: instalar la PWA en el iPhone desde Safari, instalar el APK en Android, entrar con el email invitado desde ambos y desde el navegador del ordenador.
 
-### Fase 2 — Viajes e itinerario
+### Fase 2 — Viajes e itinerario ✅ cerrada y ampliada (2026-10-05)
 > ⚠️ Reescrita 2026-10-05 (pivote local-first): ya no depende de ninguna tecnología de sincronización ni de conexión a Supabase — eso se simplifica bastante respecto al plan original.
 - **Objetivo**: gestión completa de viajes y el itinerario día a día, **local en el dispositivo**, sin cuenta ni conexión.
-- **Incluye**: motor de almacenamiento local (SQLite nativo vía `expo-sqlite` / IndexedDB en web) con IDs generados en cliente; "My trips" (crear/ver/editar/archivar/borrar con papelera de 30 días/exportar/importar JSON); asistente de creación paso a paso; itinerario con línea de tiempo por día, categorías de reserva por defecto (sin personalización todavía), vista "Now/Next"; lista de `trip_participants` (nombres locales, sin cuenta) para más adelante repartir gastos/tareas.
-- **Criterios de aceptación**: crear un viaje completo sin tener conexión a internet en ningún momento del proceso; cerrar la app por completo y reabrirla sin perder nada; reordenar pasos del itinerario; exportar e importar el mismo viaje (mismo dispositivo y entre dos dispositivos distintos, vía archivo) sin pérdida de datos.
-- **Tests**: unitarios de fechas/zonas horarias, orden de rutas, exportación/importación; E2E de crear-editar-borrar un viaje enteramente offline (sin mockear red porque no debería haber ninguna llamada de red en esta fase).
-- **Riesgos**: elegir bien el motor de almacenamiento local desde el principio para que la Fase 5 (compartir) pueda construir encima sin reescribir el modelo de datos.
-- **Qué se podrá probar**: crear el viaje "Italia" a mano con los datos del PDF de ejemplo en modo avión de principio a fin, verlo en el móvil y en el navegador (cada uno con su propia copia local), cerrar y reabrir la app sin perder nada.
+- **Incluye**: motor de almacenamiento local (SQLite nativo vía `expo-sqlite` / IndexedDB en web) con IDs generados en cliente; "My trips" (crear/ver/editar/archivar/borrar con papelera de 30 días); itinerario con resumen por día + detalle editable por día; categorías de reserva con campos propios por tipo (vuelos/trenes/bus/ferry con transportista y aeropuerto/estación+terminal de salida y llegada, alojamiento con dirección y check-in/out, estado idea/to-book/booked/paid/cancelled); lista de `trip_participants` (nombres locales, sin cuenta).
+- **Ampliado más allá del alcance original de esta fase** (adelantado desde las Fases 3/6 porque encajaba de forma natural sobre lo ya construido, sin esperar a esas fases): pestaña **Reservations** (todas las reservas agrupadas por categoría, editables, el mismo registro que Itinerary — nunca contradictorios); pestaña **Notes** (notas libres con fotos adjuntas, con nombre, subidas desde la galería); pestaña **Expenses** (total gastado con desglose por categoría, gastos manuales no ligados a una reserva, conversor de divisas con selector real de monedas vía Frankfurter); cuenta atrás del viaje en "My trips" y en el Overview.
+- **Criterios de aceptación**: crear un viaje completo sin tener conexión a internet en ningún momento del proceso (salvo el conversor de divisas, que necesita red); cerrar la app por completo y reabrirla sin perder nada; editar una reserva desde Reservations y verlo reflejado en Itinerary al instante.
+- **Tests**: unitarios de fechas/zonas horarias, cuenta atrás, estado derivado del viaje.
+- **Qué se podrá probar**: crear el viaje "Italia", añadir vuelos/hoteles con todos sus datos, verlos correlacionados en Itinerary y Reservations, apuntar notas con fotos, y seguir el gasto total.
+- **Pendiente para más adelante, fuera de esta fase**: importación automática desde PDF/captura (Fase 3, sigue necesitando la conversación de diseño de la cadena de extracción antes de empezar) y reparto de gastos entre participantes (ahora parte de la Fase 6, ver abajo).
 
 ### Fase 3 — Importación de reservas
 - **Objetivo**: la función estrella — subir el PDF/capturas y que el viaje se genere solo.
@@ -204,13 +205,14 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 - **Riesgos**: es la fase con más decisiones de producto todavía sin cerrar de todo el plan — no empezar a programarla sin esas tres respuestas.
 - **Qué se podrá probar**: compartir un viaje real entre dos móviles por QR y comprobar en el receptor que solo llegó lo elegido.
 
-### Fase 6 — Gastos y organización
+### Fase 6 — Gastos y organización 🚧 iniciada (2026-10-05)
 - **Objetivo**: control económico del viaje y seguimiento de lo hecho/pendiente.
-- **Incluye**: registro rápido de gastos, multimoneda con Frankfurter, presupuesto con avisos, gráficas (donut/barras/línea), gastos compartidos con liquidación mínima de pagos **entre `trip_participants` locales** (nombres escritos a mano, sin cuenta — ver pivote local-first de la sección 4), to-do con sugerencias desde el itinerario, checklist de equipaje con plantillas, progreso del viaje, resumen "Wrapped" al terminar.
-- **Criterios de aceptación**: repartir un gasto entre 3 participantes y que la liquidación final sea matemáticamente correcta con el mínimo de transacciones; gráficas se actualizan al añadir un gasto.
-- **Tests**: unitarios de reparto de gastos y conversión de moneda (incluye casos límite de redondeo).
-- **Riesgos**: ninguno mayor; es la fase más autocontenida — y más sencilla que en el plan original, al no depender de que cada participante tenga cuenta propia.
-- **Qué se podrá probar**: añadir gastos reales del viaje Italia con varios participantes y ver la liquidación final, todo en un solo dispositivo.
+- **Incluye**: registro rápido de gastos (✅ ya construido en la Fase 2), multimoneda con Frankfurter (✅ ya construido), gastos compartidos con liquidación mínima de pagos **entre `trip_participants` locales** (🚧 primer corte en marcha ahora), presupuesto con avisos, gráficas (donut/barras/línea), to-do con sugerencias desde el itinerario, checklist de equipaje con plantillas, progreso del viaje, resumen "Wrapped" al terminar.
+- **Primer corte en marcha ahora** (reparto y liquidación de gastos manuales): cada gasto manual puede tener "pagado por" (un participante) y "repartido entre" (varios participantes, a partes iguales en esta primera versión); una vista de liquidación calcula, por participante, cuánto ha pagado de más o de menos, y propone las transferencias mínimas para saldarlo (algoritmo voraz deudor-mayor↔acreedor-mayor, no un solver de mínimo formalmente probado, pero cercano al óptimo para grupos pequeños). El reparto de reservas con precio (no solo gastos manuales) queda para una siguiente iteración de esta misma fase si hace falta.
+- **Criterios de aceptación**: repartir un gasto entre 3 participantes y que la liquidación final sea matemáticamente correcta (balance neto de cada uno cuadra a cero sumando todo el grupo) con un número de transacciones razonablemente mínimo.
+- **Tests**: unitarios de cálculo de balances y de las transferencias sugeridas (incluye casos límite de redondeo).
+- **Pendiente tras este primer corte**: presupuesto con avisos, gráficas, checklist de equipaje, tareas, resumen "Wrapped" — se abordan en una siguiente iteración de esta fase, a priorizar contigo.
+- **Qué se podrá probar**: añadir gastos reales del viaje Italia con varios participantes, marcar quién pagó y entre quiénes se reparte, y ver la liquidación final sugerida.
 
 ### Fase 7 — Extras y pulido
 - **Objetivo**: funciones extra priorizadas de la sección 11 y pulido de diseño/rendimiento/accesibilidad en toda la app.
@@ -255,4 +257,4 @@ Dentro de un viaje: `Overview` · `Itinerary` · `Bookings` · `Documents` · `M
 
 ---
 
-*Próximos pasos: Fase 1 cerrada y verificada en producción (PWA + APK). Antes de empezar la Fase 2 de verdad, falta tu respuesta a las tres preguntas abiertas de la Fase 5 (sección 3) — no bloquean la Fase 2 en sí, pero sí conviene tenerlas claras pronto porque condicionan si el modelo de datos de compartir necesita Supabase detrás o no.*
+*Próximos pasos: Fases 1 y 2 cerradas y verificadas en producción. Fase 6 (gastos y organización) iniciada — primer corte de reparto/liquidación de gastos en marcha. Siguen pendientes de tu respuesta las tres preguntas abiertas de la Fase 5 (sección 3) antes de poder empezarla; la Fase 3 (importación automática) sigue necesitando la conversación de diseño de la cadena de extracción antes de arrancar. Ninguna de las dos bloquea seguir avanzando la Fase 6.*

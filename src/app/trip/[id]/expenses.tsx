@@ -15,13 +15,16 @@ import {
   type CategoryKey,
 } from '@/features/bookings/categories';
 import { useExchangeRate, useExchangeRates } from '@/features/expenses/hooks';
+import { computeBalances, computeTransfers } from '@/features/expenses/settlement';
 import {
   useBookings,
   useCreateExpense,
   useDeleteExpense,
   useExpenses,
+  useExpenseSplits,
 } from '@/features/itinerary/hooks';
-import { useTrip } from '@/features/trips/hooks';
+import { useParticipants, useTrip } from '@/features/trips/hooks';
+import type { TripParticipant } from '@/features/trips/types';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -134,8 +137,79 @@ export default function ExpensesScreen() {
       ) : null}
 
       <ExpensesList tripId={id} />
+      <Settlement tripId={id} defaultCurrency={defaultCurrency} />
       <CurrencyConverter defaultFrom={defaultCurrency} />
     </Screen>
+  );
+}
+
+/** Who-owes-whom across every manual expense that was split between participants — see src/features/expenses/settlement.ts. */
+function Settlement({ tripId, defaultCurrency }: { tripId: string; defaultCurrency: string }) {
+  const theme = useTheme();
+  const { data: participants } = useParticipants(tripId);
+  const { data: expenses } = useExpenses(tripId);
+  const { data: splits } = useExpenseSplits(tripId);
+
+  const otherCurrencies = useMemo(
+    () =>
+      Array.from(
+        new Set((expenses ?? []).map((e) => e.currency).filter((c) => c !== defaultCurrency)),
+      ),
+    [expenses, defaultCurrency],
+  );
+  const rateQueries = useExchangeRates(otherCurrencies, defaultCurrency);
+  const rateFor = (currency: string): number | undefined =>
+    currency === defaultCurrency ? 1 : rateQueries[otherCurrencies.indexOf(currency)]?.data?.rate;
+
+  if (!participants || participants.length < 2 || !splits || splits.length === 0) return null;
+
+  const expenseCurrency = new Map((expenses ?? []).map((e) => [e.id, e.currency]));
+  const convertedExpenses = (expenses ?? [])
+    .filter((e) => e.paidByParticipantId)
+    .map((e) => ({
+      amount: e.amount * (rateFor(e.currency) ?? 0) || 0,
+      paidByParticipantId: e.paidByParticipantId,
+    }));
+  const convertedSplits = splits.map((s) => {
+    const currency = expenseCurrency.get(s.expenseId) ?? defaultCurrency;
+    return {
+      participantId: s.participantId,
+      shareAmount: s.shareAmount * (rateFor(currency) ?? 0),
+    };
+  });
+
+  const balances = computeBalances(
+    participants.map((p) => p.id),
+    convertedExpenses,
+    convertedSplits,
+  );
+  const transfers = computeTransfers(balances);
+  const nameFor = (participantId: string) =>
+    participants.find((p) => p.id === participantId)?.displayName ?? '?';
+
+  return (
+    <View style={{ gap: theme.space.sm }}>
+      <Text style={[theme.type.title, { color: theme.colors.text }]}>Who owes whom</Text>
+      {transfers.length === 0 ? (
+        <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
+          Everyone&apos;s settled up.
+        </Text>
+      ) : (
+        transfers.map((t, i) => (
+          <View
+            key={i}
+            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}
+          >
+            <Text style={[theme.type.body, { color: theme.colors.text }]}>
+              {nameFor(t.fromParticipantId)} → {nameFor(t.toParticipantId)}
+            </Text>
+            <Text style={[theme.type.data, { color: theme.colors.accent }]}>
+              {formatMoney(t.amount, defaultCurrency)}
+            </Text>
+          </View>
+        ))
+      )}
+    </View>
   );
 }
 
@@ -143,6 +217,7 @@ function ExpensesList({ tripId }: { tripId: string }) {
   const theme = useTheme();
   const { data: trip } = useTrip(tripId);
   const { data: expenses } = useExpenses(tripId);
+  const { data: participants } = useParticipants(tripId);
   const createExpense = useCreateExpense(tripId);
   const deleteExpense = useDeleteExpense(tripId);
   const { confirm, dialog } = useConfirm();
@@ -151,6 +226,23 @@ function ExpensesList({ tripId }: { tripId: string }) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState(trip?.defaultCurrency ?? 'EUR');
+  const [paidBy, setPaidBy] = useState<string | null>(null);
+  const [splitWith, setSplitWith] = useState<string[] | null>(null);
+
+  const onStartAdding = () => {
+    setPaidBy(participants?.[0]?.id ?? null);
+    setSplitWith((participants ?? []).map((p) => p.id));
+    setAdding(true);
+  };
+
+  const toggleSplitWith = (participantId: string) => {
+    setSplitWith((current) => {
+      const list = current ?? [];
+      return list.includes(participantId)
+        ? list.filter((id) => id !== participantId)
+        : [...list, participantId];
+    });
+  };
 
   const onAdd = async () => {
     const trimmed = title.trim();
@@ -161,6 +253,8 @@ function ExpensesList({ tripId }: { tripId: string }) {
       title: trimmed,
       amount: parsed,
       currency: currency.toUpperCase(),
+      paidByParticipantId: paidBy,
+      splitParticipantIds: splitWith && splitWith.length > 0 ? splitWith : undefined,
     });
     setTitle('');
     setAmount('');
@@ -185,6 +279,7 @@ function ExpensesList({ tripId }: { tripId: string }) {
 
       {(expenses ?? []).map((expense) => {
         const category = bookingCategories[expense.categoryKey];
+        const payer = participants?.find((p) => p.id === expense.paidByParticipantId);
         return (
           <View
             key={expense.id}
@@ -198,9 +293,14 @@ function ExpensesList({ tripId }: { tripId: string }) {
             }}
           >
             <Ionicons name={category.icon} size={16} color={category.color} />
-            <Text style={[theme.type.body, { color: theme.colors.text, flex: 1 }]}>
-              {expense.title}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[theme.type.body, { color: theme.colors.text }]}>{expense.title}</Text>
+              {payer ? (
+                <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+                  Paid by {payer.displayName}
+                </Text>
+              ) : null}
+            </View>
             <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
               {formatMoney(expense.amount, expense.currency)}
             </Text>
@@ -254,6 +354,40 @@ function ExpensesList({ tripId }: { tripId: string }) {
               name="expense-currency"
             />
           </View>
+
+          {participants && participants.length > 0 ? (
+            <>
+              <View style={{ gap: theme.space.xs }}>
+                <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>PAID BY</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs }}>
+                  {participants.map((p) => (
+                    <ParticipantChip
+                      key={p.id}
+                      participant={p}
+                      active={p.id === paidBy}
+                      onPress={() => setPaidBy(p.id)}
+                    />
+                  ))}
+                </View>
+              </View>
+              <View style={{ gap: theme.space.xs }}>
+                <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+                  SPLIT BETWEEN
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs }}>
+                  {participants.map((p) => (
+                    <ParticipantChip
+                      key={p.id}
+                      participant={p}
+                      active={(splitWith ?? []).includes(p.id)}
+                      onPress={() => toggleSplitWith(p.id)}
+                    />
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : null}
+
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
             <Button
               variant="primary"
@@ -270,7 +404,7 @@ function ExpensesList({ tripId }: { tripId: string }) {
           </View>
         </View>
       ) : (
-        <Button variant="dashed" onPress={() => setAdding(true)}>
+        <Button variant="dashed" onPress={onStartAdding}>
           + Add expense
         </Button>
       )}
@@ -322,6 +456,45 @@ function ExpenseCategoryChip({
         ]}
       >
         {category.label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function ParticipantChip({
+  participant,
+  active,
+  onPress,
+}: {
+  participant: TripParticipant;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => ({
+        paddingHorizontal: theme.space.sm,
+        paddingVertical: 6,
+        borderRadius: theme.radius.pill,
+        backgroundColor: active ? theme.colors.steel : 'transparent',
+        borderWidth: 1,
+        borderColor: active ? theme.colors.steel : theme.colors.border,
+        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+      })}
+    >
+      <Text
+        style={[
+          theme.type.caption,
+          { fontSize: 11, color: active ? theme.colors.onInk : theme.colors.textMuted },
+        ]}
+      >
+        {participant.displayName}
       </Text>
     </Pressable>
   );

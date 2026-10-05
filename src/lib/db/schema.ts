@@ -118,4 +118,22 @@ export const migrations: string[] = [
 
   create index idx_note_photos_note on note_photos(note_id);
   `,
+
+  // v4 — who paid and who owes: splitting a manual expense across
+  // trip_participants (Fase 6, see docs/PLAN.md). Splits are stored as
+  // explicit per-participant amounts (not just "split N ways") so a future
+  // unequal-split UI doesn't need another migration.
+  `
+  alter table expenses add column paid_by_participant_id text
+    references trip_participants(id) on delete set null;
+
+  create table expense_splits (
+    id text primary key,
+    expense_id text not null references expenses(id) on delete cascade,
+    participant_id text not null references trip_participants(id) on delete cascade,
+    share_amount real not null
+  );
+
+  create index idx_expense_splits_expense on expense_splits(expense_id);
+  `,
 ];
