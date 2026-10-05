@@ -1,6 +1,8 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { useSettings } from '@/features/settings/hooks';
+
 import {
   palettes,
   space,
@@ -24,7 +26,9 @@ const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const systemScheme = useColorScheme();
-  const scheme: ColorScheme = systemScheme === 'dark' ? 'dark' : 'light';
+  const { theme: preference } = useSettings();
+  const scheme: ColorScheme =
+    preference === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : preference;
 
   const value = useMemo<Theme>(
     () => ({

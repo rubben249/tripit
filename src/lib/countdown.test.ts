@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { formatCountdown, getCountdownParts } from './countdown';
+import { formatCountdown, formatTimeUntil, getCountdownParts } from './countdown';
 
 describe('getCountdownParts', () => {
   it('returns null once the start day has arrived', () => {
@@ -58,5 +58,21 @@ describe('formatCountdown', () => {
   it('returns null once the trip has started', () => {
     const now = new Date('2026-01-05T00:00:00');
     expect(formatCountdown('2026-01-05', now)).toBeNull();
+  });
+});
+
+describe('formatTimeUntil', () => {
+  const now = new Date(2026, 9, 10, 12, 0);
+  const at = (h: number, m = 0, day = 10) => new Date(2026, 9, day, h, m);
+
+  it('reads minutes, hours and days', () => {
+    expect(formatTimeUntil(at(12, 25), now)).toBe('in 25 min');
+    expect(formatTimeUntil(at(14, 15), now)).toBe('in 2 h 15 min');
+    expect(formatTimeUntil(at(15), now)).toBe('in 3 h');
+    expect(formatTimeUntil(at(12, 0, 13), now)).toBe('in 3 days');
+  });
+
+  it('says now once the moment has arrived', () => {
+    expect(formatTimeUntil(at(11, 50), now)).toBe('now');
   });
 });

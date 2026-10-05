@@ -14,7 +14,7 @@ export function NoteEditor({
   booking,
   bodyPlaceholder,
 }: {
-  tripId: string;
+  tripId: string | null;
   booking: Booking;
   bodyPlaceholder: string;
 }) {

@@ -1,33 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { Booking } from '@/features/itinerary/types';
+import { makeBooking } from '@/test/factories';
 
 import { sortTasks } from './sortTasks';
 
 function task(id: string, createdAt: string, details: Booking['details']): Booking {
-  return {
-    id,
-    tripId: 't1',
-    cityId: null,
-    dayId: null,
-    categoryKey: 'task',
-    status: 'idea',
-    title: id,
-    startAt: null,
-    endAt: null,
-    timezone: null,
-    locationName: null,
-    address: null,
-    lat: null,
-    lng: null,
-    details,
-    price: null,
-    currency: null,
-    notes: null,
-    orderIndex: 0,
-    createdAt,
-    updatedAt: createdAt,
-  };
+  return makeBooking({ id, title: id, categoryKey: 'task', createdAt, details });
 }
 
 describe('sortTasks', () => {

@@ -52,7 +52,8 @@ export const categoryKeySchema = z.enum(categoryKeys as [CategoryKey, ...Categor
 
 export const bookingSchema = z.object({
   id: z.string(),
-  tripId: z.string(),
+  /** Null only for general notes (created from the Now tab), which belong to no trip. */
+  tripId: z.string().nullable(),
   cityId: z.string().nullable(),
   dayId: z.string().nullable(),
   categoryKey: categoryKeySchema,

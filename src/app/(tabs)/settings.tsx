@@ -5,29 +5,34 @@ import { Link } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { env } from '@/config/env';
+import { PreferencesSection } from '@/features/settings/PreferencesSection';
+import { useSettings } from '@/features/settings/hooks';
+import { TravelStatsCard } from '@/features/stats/TravelStatsCard';
+import { BackupSection } from '@/features/transfer/BackupSection';
 import { useTrashedTrips } from '@/features/trips/hooks';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
-export default function SettingsScreen() {
+export default function YouScreen() {
   const theme = useTheme();
+  const { displayName } = useSettings();
   const { data: trashedTrips } = useTrashedTrips();
 
   return (
-    <Screen>
-      <ScreenTitle>You</ScreenTitle>
-      <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-        Account, default currency ({env.defaultCurrency}), notification preferences and the admin
-        panel land in later phases.
-      </Text>
+    <Screen scroll>
+      <ScreenTitle>{displayName ? `Hi, ${displayName}` : 'You'}</ScreenTitle>
+
+      <TravelStatsCard />
+
+      <PreferencesSection />
+
+      <BackupSection />
 
       <Link href="/trash" asChild>
         <SettingsRow label="Trash" value={trashedTrips?.length ?? 0} />
       </Link>
 
-      <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>
-        {env.appName} · Fase 2
-      </Text>
+      <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>{env.appName}</Text>
     </Screen>
   );
 }

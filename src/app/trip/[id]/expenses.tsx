@@ -12,13 +12,10 @@ import { useExchangeRate, useExchangeRates } from '@/features/expenses/hooks';
 import { BookingForm } from '@/features/itinerary/BookingForm';
 import { useBookings, useItineraryDays } from '@/features/itinerary/hooks';
 import { formatDayLabel } from '@/lib/dates';
+import { formatMoney } from '@/lib/currency';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
-
-function formatMoney(amount: number, currency: string) {
-  return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
 
 export default function ExpensesScreen() {
   const theme = useTheme();

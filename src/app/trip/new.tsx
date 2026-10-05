@@ -7,7 +7,7 @@ import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
-import { env } from '@/config/env';
+import { useSettings } from '@/features/settings/hooks';
 import { useCreateTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -19,7 +19,10 @@ export default function NewTripScreen() {
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
-  const [currency, setCurrency] = useState(env.defaultCurrency);
+  const { defaultCurrency } = useSettings();
+  // Null until the user types, so the field follows the saved default once settings have loaded.
+  const [typedCurrency, setCurrency] = useState<string | null>(null);
+  const currency = typedCurrency ?? defaultCurrency;
   const [error, setError] = useState('');
 
   const onCreate = async () => {
@@ -30,7 +33,7 @@ export default function NewTripScreen() {
         name: name.trim(),
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
-        defaultCurrency: currency.trim().toUpperCase() || 'EUR',
+        defaultCurrency: currency.trim().toUpperCase() || defaultCurrency,
       });
       router.replace(`/trip/${trip.id}`);
     } catch (err) {

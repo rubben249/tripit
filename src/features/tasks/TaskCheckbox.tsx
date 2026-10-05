@@ -16,7 +16,7 @@ export function TaskCheckbox({ tripId, task }: { tripId: string; task: Booking }
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: done }}
+      aria-checked={done}
       accessibilityLabel={`Mark "${task.title}" as ${done ? 'pending' : 'done'}`}
       hitSlop={8}
       onHoverIn={onHoverIn}

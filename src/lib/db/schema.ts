@@ -147,4 +147,57 @@ export const migrations: string[] = [
   drop table expense_splits;
   drop table expenses;
   `,
+
+  // v6 — general notes: notes that belong to no trip (created from the Now
+  // tab), so bookings.trip_id becomes nullable. SQLite can't drop a NOT NULL
+  // constraint in place, so the table is rebuilt. Dropping the old table
+  // fires note_photos' ON DELETE CASCADE, so photos are parked in a backup
+  // table first and put back once the new `bookings` exists under the same
+  // name (foreign keys reference tables by name, so they re-attach).
+  `
+  create table note_photos_backup as select * from note_photos;
+
+  create table bookings_new (
+    id text primary key,
+    trip_id text references trips(id) on delete cascade,
+    city_id text references cities(id) on delete set null,
+    day_id text references itinerary_days(id) on delete set null,
+    category_key text not null,
+    status text not null default 'idea'
+      check (status in ('idea','to_book','booked','paid','cancelled')),
+    title text not null,
+    start_at text,
+    end_at text,
+    timezone text,
+    location_name text,
+    address text,
+    lat real,
+    lng real,
+    details text,
+    price real,
+    currency text,
+    notes text,
+    order_index integer not null default 0,
+    created_at text not null,
+    updated_at text not null
+  );
+
+  insert into bookings_new select * from bookings;
+  drop table bookings;
+  alter table bookings_new rename to bookings;
+  create index idx_bookings_trip_day on bookings(trip_id, day_id, order_index);
+
+  insert into note_photos select * from note_photos_backup;
+  drop table note_photos_backup;
+  `,
+
+  // v7 — user preferences set from the You tab (display name, default
+  // currency, theme). Plain key/value: a handful of rows, no schema churn
+  // every time a new preference is added.
+  `
+  create table settings (
+    key text primary key,
+    value text not null
+  );
+  `,
 ];

@@ -34,3 +34,11 @@ export async function fetchExchangeRate(from: string, to: string): Promise<Excha
 
   return { rate, date: data.date ?? new Date().toISOString().slice(0, 10) };
 }
+
+/** "1,234.50 EUR" — amount in the device locale, followed by the ISO code. */
+export function formatMoney(amount: number, currency: string, fractionDigits = 2): string {
+  return `${amount.toLocaleString(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })} ${currency}`;
+}

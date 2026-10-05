@@ -1,5 +1,7 @@
 import { intervalToDuration, parseISO, startOfDay } from 'date-fns';
 
+import { plural } from './plural';
+
 export interface CountdownParts {
   months: number;
   days: number;
@@ -38,6 +40,16 @@ export function formatCountdown(startDate: string, now: Date = new Date()): stri
   return segments.length > 0 ? segments.join(', ') : 'Starting any moment';
 }
 
-function plural(n: number, unit: string): string {
-  return `${n} ${unit}${n === 1 ? '' : 's'}`;
+/** Short "time until" for things happening soon: "in 25 min", "in 2 h 15 min", "in 3 days". */
+export function formatTimeUntil(target: Date, now: Date = new Date()): string {
+  const minutes = Math.round((target.getTime() - now.getTime()) / 60000);
+  if (minutes <= 0) return 'now';
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const rest = minutes % 60;
+    return rest > 0 ? `in ${hours} h ${rest} min` : `in ${hours} h`;
+  }
+  const days = Math.round(hours / 24);
+  return `in ${plural(days, 'day')}`;
 }

@@ -142,7 +142,7 @@ export async function ensureItineraryDays(
 
 interface BookingRow {
   id: string;
-  trip_id: string;
+  trip_id: string | null;
   city_id: string | null;
   day_id: string | null;
   category_key: string;
@@ -199,12 +199,24 @@ export async function listBookings(tripId: string): Promise<Booking[]> {
   return rows.map(rowToBooking);
 }
 
-export async function createBooking(tripId: string, input: NewBookingInput): Promise<Booking> {
+/** Notes that belong to no trip — created from the Now tab. */
+export async function listGeneralNotes(): Promise<Booking[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<BookingRow>(
+    "select * from bookings where trip_id is null and category_key = 'note' order by updated_at desc",
+  );
+  return rows.map(rowToBooking);
+}
+
+export async function createBooking(
+  tripId: string | null,
+  input: NewBookingInput,
+): Promise<Booking> {
   const db = await getDb();
   const id = generateId();
   const now = new Date().toISOString();
   const countRow = await db.getFirstAsync<{ n: number }>(
-    'select count(*) as n from bookings where trip_id = ? and day_id is ?',
+    'select count(*) as n from bookings where trip_id is ? and day_id is ?',
     tripId,
     input.dayId ?? null,
   );
