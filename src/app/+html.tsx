@@ -5,6 +5,12 @@ import type { ReactNode } from 'react';
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
+// Matches app.config.ts's webBasePath — the Pages deploy serves this app
+// under /tripit/, not the domain root, so static files in public/ (which
+// Expo copies through as-is) need that prefix too.
+const basePath = process.env.EXPO_WEB_BASE_PATH ?? '';
+const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
+
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -21,6 +27,12 @@ export default function Root({ children }: { children: ReactNode }) {
 
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+
+        {/* iOS "Add to Home Screen": custom icon + standalone (no Safari chrome) when launched from the home screen. */}
+        <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content={appName} />
         {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
       <body>{children}</body>
