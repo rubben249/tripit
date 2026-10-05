@@ -13,6 +13,13 @@ export interface ExchangeRate {
   date: string;
 }
 
+/** All ISO currency codes Frankfurter can convert, as {code: name} — used to populate currency pickers with real, spendable currencies instead of free-text input. */
+export async function fetchCurrencies(): Promise<Record<string, string>> {
+  const res = await fetch('https://api.frankfurter.dev/v1/currencies');
+  if (!res.ok) throw new Error(`Currency list request failed (${res.status})`);
+  return (await res.json()) as Record<string, string>;
+}
+
 export async function fetchExchangeRate(from: string, to: string): Promise<ExchangeRate> {
   if (from === to) return { rate: 1, date: new Date().toISOString().slice(0, 10) };
 

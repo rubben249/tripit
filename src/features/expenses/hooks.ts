@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 
-import { fetchExchangeRate } from '@/lib/currency';
+import { fetchCurrencies, fetchExchangeRate } from '@/lib/currency';
 
 const isCurrencyCode = (code: string) => /^[A-Za-z]{3}$/.test(code);
 
@@ -16,6 +16,15 @@ function rateQueryOptions(from: string, to: string) {
 
 export function useExchangeRate(from: string, to: string) {
   return useQuery(rateQueryOptions(from, to));
+}
+
+export function useCurrencies() {
+  return useQuery({
+    queryKey: ['currencies'],
+    queryFn: fetchCurrencies,
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: 1,
+  });
 }
 
 /** One rate query per currency, in currency order — used to convert a trip's mixed-currency bookings to its default currency. */

@@ -8,10 +8,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 const SECTIONS = [
   { href: '', label: 'Overview' },
-  { href: '/itinerary', label: 'Itinerary' },
+  { href: '/itinerary', label: 'Itinerary', alsoActiveOn: '/day/' },
   { href: '/reservations', label: 'Reservations' },
   { href: '/people', label: 'People' },
   { href: '/expenses', label: 'Expenses' },
+  { href: '/notes', label: 'Notes' },
 ] as const;
 
 export default function TripLayout() {
@@ -31,8 +32,12 @@ export default function TripLayout() {
       >
         {SECTIONS.map((section) => {
           const target = `/trip/${id}${section.href}`;
+          const alsoActiveOn = 'alsoActiveOn' in section ? section.alsoActiveOn : undefined;
           const active =
-            section.href === '' ? pathname === `/trip/${id}` : pathname.endsWith(section.href);
+            section.href === ''
+              ? pathname === `/trip/${id}`
+              : pathname.includes(section.href) ||
+                (!!alsoActiveOn && pathname.includes(alsoActiveOn));
           return (
             <Link key={section.href} href={target as never} asChild>
               <TripTabLink label={section.label} active={active} />

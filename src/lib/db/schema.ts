@@ -85,4 +85,20 @@ export const migrations: string[] = [
   create index idx_itinerary_days_trip on itinerary_days(trip_id);
   create index idx_bookings_trip_day on bookings(trip_id, day_id, order_index);
   `,
+
+  // v2 — manual expenses: budget entries that aren't bookings (e.g. a meal),
+  // so they're deliberately not linked to a day/city/itinerary at all.
+  `
+  create table expenses (
+    id text primary key,
+    trip_id text not null references trips(id) on delete cascade,
+    category_key text not null,
+    title text not null,
+    amount real not null,
+    currency text not null,
+    created_at text not null
+  );
+
+  create index idx_expenses_trip on expenses(trip_id);
+  `,
 ];

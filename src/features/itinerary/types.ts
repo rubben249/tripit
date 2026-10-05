@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { categoryKeys } from '@/features/bookings/categories';
+import { categoryKeys, type CategoryKey } from '@/features/bookings/categories';
 
 export const citySchema = z.object({
   id: z.string(),
@@ -36,7 +36,11 @@ export type ItineraryDay = z.infer<typeof itineraryDaySchema>;
 export const bookingStatusSchema = z.enum(['idea', 'to_book', 'booked', 'paid', 'cancelled']);
 export type BookingStatus = z.infer<typeof bookingStatusSchema>;
 
-export const categoryKeySchema = z.enum(categoryKeys as [string, ...string[]]);
+// Cast to a literal tuple (not just [string, ...string[]]) so z.enum infers
+// the actual CategoryKey union instead of widening every category to `string`
+// — that widening previously forced `as CategoryKey` casts everywhere a
+// booking's category was read.
+export const categoryKeySchema = z.enum(categoryKeys as [CategoryKey, ...CategoryKey[]]);
 
 export const bookingSchema = z.object({
   id: z.string(),
@@ -73,9 +77,29 @@ export const newBookingInputSchema = z.object({
   timezone: z.string().optional(),
   locationName: z.string().optional(),
   address: z.string().optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   price: z.number().optional(),
   currency: z.string().optional(),
   notes: z.string().optional(),
   status: bookingStatusSchema.default('idea'),
 });
 export type NewBookingInput = z.infer<typeof newBookingInputSchema>;
+
+export const expenseSchema = z.object({
+  id: z.string(),
+  tripId: z.string(),
+  categoryKey: categoryKeySchema,
+  title: z.string().min(1),
+  amount: z.number(),
+  currency: z.string(),
+  createdAt: z.string(),
+});
+export type Expense = z.infer<typeof expenseSchema>;
+
+export const newExpenseInputSchema = z.object({
+  categoryKey: categoryKeySchema,
+  title: z.string().min(1, 'Title is required'),
+  amount: z.number().positive(),
+  currency: z.string().min(1),
+});
+export type NewExpenseInput = z.infer<typeof newExpenseInputSchema>;

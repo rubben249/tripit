@@ -2,7 +2,15 @@ import { getDb } from '@/lib/db/client';
 import { generateId } from '@/lib/id';
 import { eachDateBetween } from '@/lib/dates';
 
-import type { Booking, City, ItineraryDay, NewBookingInput, NewCityInput } from './types';
+import type {
+  Booking,
+  City,
+  Expense,
+  ItineraryDay,
+  NewBookingInput,
+  NewCityInput,
+  NewExpenseInput,
+} from './types';
 
 // --- Cities -----------------------------------------------------------
 
@@ -213,8 +221,8 @@ export async function createBooking(tripId: string, input: NewBookingInput): Pro
   await db.runAsync(
     `insert into bookings
        (id, trip_id, city_id, day_id, category_key, status, title, start_at, end_at, timezone,
-        location_name, address, price, currency, notes, order_index, created_at, updated_at)
-     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        location_name, address, details, price, currency, notes, order_index, created_at, updated_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     tripId,
     input.cityId ?? null,
@@ -227,6 +235,7 @@ export async function createBooking(tripId: string, input: NewBookingInput): Pro
     input.timezone ?? null,
     input.locationName ?? null,
     input.address ?? null,
+    input.details ? JSON.stringify(input.details) : null,
     input.price ?? null,
     input.currency ?? null,
     input.notes ?? null,
@@ -246,6 +255,7 @@ export type BookingUpdate = Partial<
     Booking,
     | 'title'
     | 'status'
+    | 'categoryKey'
     | 'dayId'
     | 'cityId'
     | 'startAt'
@@ -253,12 +263,19 @@ export type BookingUpdate = Partial<
     | 'timezone'
     | 'locationName'
     | 'address'
+    | 'details'
     | 'price'
     | 'currency'
     | 'notes'
     | 'orderIndex'
   >
 >;
+
+export async function getBooking(id: string): Promise<Booking | null> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<BookingRow>('select * from bookings where id = ?', id);
+  return rows[0] ? rowToBooking(rows[0]) : null;
+}
 
 export async function updateBooking(id: string, update: BookingUpdate): Promise<void> {
   const db = await getDb();
@@ -269,11 +286,12 @@ export async function updateBooking(id: string, update: BookingUpdate): Promise<
   const next = { ...existing, ...update, updatedAt: new Date().toISOString() };
 
   await db.runAsync(
-    `update bookings set title = ?, status = ?, day_id = ?, city_id = ?, start_at = ?, end_at = ?,
-       timezone = ?, location_name = ?, address = ?, price = ?, currency = ?, notes = ?,
-       order_index = ?, updated_at = ? where id = ?`,
+    `update bookings set title = ?, status = ?, category_key = ?, day_id = ?, city_id = ?,
+       start_at = ?, end_at = ?, timezone = ?, location_name = ?, address = ?, details = ?,
+       price = ?, currency = ?, notes = ?, order_index = ?, updated_at = ? where id = ?`,
     next.title,
     next.status,
+    next.categoryKey,
     next.dayId,
     next.cityId,
     next.startAt,
@@ -281,6 +299,7 @@ export async function updateBooking(id: string, update: BookingUpdate): Promise<
     next.timezone,
     next.locationName,
     next.address,
+    next.details ? JSON.stringify(next.details) : null,
     next.price,
     next.currency,
     next.notes,
@@ -293,4 +312,67 @@ export async function updateBooking(id: string, update: BookingUpdate): Promise<
 export async function deleteBooking(id: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('delete from bookings where id = ?', id);
+}
+
+// --- Expenses (manual, not tied to a booking/day) --------------------------
+
+interface ExpenseRow {
+  id: string;
+  trip_id: string;
+  category_key: string;
+  title: string;
+  amount: number;
+  currency: string;
+  created_at: string;
+}
+
+function rowToExpense(row: ExpenseRow): Expense {
+  return {
+    id: row.id,
+    tripId: row.trip_id,
+    categoryKey: row.category_key as Expense['categoryKey'],
+    title: row.title,
+    amount: row.amount,
+    currency: row.currency,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listExpenses(tripId: string): Promise<Expense[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<ExpenseRow>(
+    'select * from expenses where trip_id = ? order by created_at desc',
+    tripId,
+  );
+  return rows.map(rowToExpense);
+}
+
+export async function createExpense(tripId: string, input: NewExpenseInput): Promise<Expense> {
+  const db = await getDb();
+  const id = generateId();
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'insert into expenses (id, trip_id, category_key, title, amount, currency, created_at) values (?, ?, ?, ?, ?, ?, ?)',
+    id,
+    tripId,
+    input.categoryKey,
+    input.title,
+    input.amount,
+    input.currency,
+    now,
+  );
+  return {
+    id,
+    tripId,
+    categoryKey: input.categoryKey,
+    title: input.title,
+    amount: input.amount,
+    currency: input.currency,
+    createdAt: now,
+  };
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('delete from expenses where id = ?', id);
 }
