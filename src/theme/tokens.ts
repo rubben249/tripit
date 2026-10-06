@@ -26,14 +26,31 @@ export interface ThemeColors {
   surfaceAlt: string;
   text: string;
   textMuted: string;
+  /** Text that is present but deliberately recessive — disabled days, out-of-month dates,
+   * placeholder hints. Still readable (≥3:1), unlike using `border` as a text color. */
+  textFaint: string;
   border: string;
+  /** A hairline that only separates, where `border` would draw a box. */
+  borderSoft: string;
   ink: string;
   steel: string;
   mist: string;
+  /** The filled state — primary buttons, the selected day, the active filter.
+   * `ink` plays this role on paper, but in the dark scheme ink *is* nearly the
+   * background, so the fill becomes accent there. Components read `solid`, never
+   * `ink`, when they mean "filled". */
+  solid: string;
+  onSolid: string;
   accent: string;
+  /** Accent at surface strength: selected rows, icon wells, today's marker. */
+  accentSoft: string;
   good: string;
   warn: string;
   onInk: string;
+  /** Keyboard focus ring — the one browser surface react-native-web leaves unthemed. */
+  focus: string;
+  /** Backdrop behind modals and sheets. */
+  scrim: string;
 }
 
 const light: ThemeColors = {
@@ -41,15 +58,22 @@ const light: ThemeColors = {
   surface: '#FFFBF4',
   surfaceAlt: '#FAF1E1',
   text: brand.ink,
-  textMuted: '#7A6552',
+  textMuted: '#705B48',
+  textFaint: '#A58F76',
   border: '#E3D5BE',
+  borderSoft: '#EDE2CF',
   ink: brand.ink,
   steel: brand.steel,
   mist: brand.mist,
+  solid: brand.ink,
+  onSolid: brand.paper,
   accent: brand.accent,
+  accentSoft: '#F1E2CB',
   good: brand.good,
   warn: brand.warn,
   onInk: brand.paper,
+  focus: brand.accent,
+  scrim: 'rgba(23,17,11,0.52)',
 };
 
 const dark: ThemeColors = {
@@ -57,15 +81,22 @@ const dark: ThemeColors = {
   surface: '#241B12',
   surfaceAlt: '#1D160F',
   text: '#EFE6D8',
-  textMuted: '#B6A48D',
+  textMuted: '#BCAB95',
+  textFaint: '#8A7762',
   border: '#3B2D1E',
+  borderSoft: '#2E2317',
   ink: brand.ink,
   steel: brand.steel,
   mist: brand.mist,
+  solid: '#C99455',
+  onSolid: '#1A120A',
   accent: '#C99455',
+  accentSoft: '#3A2A19',
   good: brand.good,
   warn: brand.warn,
   onInk: '#EFE6D8',
+  focus: '#C99455',
+  scrim: 'rgba(8,5,3,0.66)',
 };
 
 export const palettes: Record<ColorScheme, ThemeColors> = { light, dark };
@@ -187,13 +218,19 @@ export interface TypeStyle {
   letterSpacing?: number;
 }
 
-/** Type scale from the approved design proposal (section "02 — Tipografía"). */
+/**
+ * Type scale from the approved design proposal (section "02 — Tipografía").
+ * `headline` names the screen; `section` names a block inside it — they must stay
+ * two clearly different steps, or a screen reads as a flat list of equal shouts.
+ * Display sizes carry slight negative tracking because Fraunces sets loose at scale.
+ */
 export const type: Record<
-  'display' | 'headline' | 'title' | 'body' | 'caption' | 'data',
+  'display' | 'headline' | 'section' | 'title' | 'body' | 'caption' | 'label' | 'data',
   TypeStyle
 > = {
-  display: { fontFamily: fontFamily.display, fontSize: 38, lineHeight: 44 },
-  headline: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 32 },
+  display: { fontFamily: fontFamily.display, fontSize: 38, lineHeight: 44, letterSpacing: -0.4 },
+  headline: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 32, letterSpacing: -0.2 },
+  section: { fontFamily: fontFamily.displayMedium, fontSize: 20, lineHeight: 26 },
   title: { fontFamily: fontFamily.bodySemiBold, fontSize: 17, lineHeight: 22 },
   body: { fontFamily: fontFamily.body, fontSize: 16, lineHeight: 24 },
   caption: {
@@ -202,10 +239,13 @@ export const type: Record<
     lineHeight: 16,
     letterSpacing: 0.3,
   },
+  /** Field and group labels: small, uppercase at the call site, widely tracked. */
+  label: { fontFamily: fontFamily.monoMedium, fontSize: 11, lineHeight: 15, letterSpacing: 0.8 },
   data: { fontFamily: fontFamily.mono, fontSize: 13.5, lineHeight: 19 },
 };
 
 export const space = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,
@@ -214,9 +254,60 @@ export const space = {
   xxl: 48,
 } as const;
 
+/**
+ * `sm` is the control radius (buttons, inputs, rows), `md` the card radius, `lg` the
+ * modal radius. They were 3/8/16: a 3px corner on a 48px control reads as unfinished
+ * rather than as sharp, so the whole ladder moved up one step while keeping the
+ * same three roles.
+ */
 export const radius = {
-  sm: 3,
-  md: 8,
-  lg: 16,
+  sm: 8,
+  md: 14,
+  lg: 20,
   pill: 999,
+} as const;
+
+export interface Elevation {
+  boxShadow: string;
+  elevation: number;
+}
+
+/**
+ * Three depths, all with a real downward offset and a soft blur — a glow with no
+ * offset is decoration, not depth. Shadows are warm-black rather than neutral so
+ * they sit in the Atlas Umber family instead of graying the paper.
+ */
+export const elevation: Record<'raised' | 'floating' | 'overlay', Elevation> = {
+  raised: { boxShadow: '0px 1px 2px rgba(43,30,18,0.07)', elevation: 1 },
+  floating: { boxShadow: '0px 4px 12px rgba(43,30,18,0.14)', elevation: 5 },
+  overlay: { boxShadow: '0px 16px 40px rgba(23,17,11,0.26)', elevation: 16 },
+} as const;
+
+/**
+ * Motion scale. Durations are in ms; the spring configs feed Reanimated's
+ * `withSpring`. Nothing in the app animates longer than `slow` — above ~320ms a
+ * phone interaction stops feeling like a response and starts feeling like a wait.
+ * See `src/lib/motion.ts` for the easings and the reduced-motion gate.
+ */
+export const motion = {
+  duration: { instant: 90, fast: 140, base: 200, slow: 320 },
+  /** Pressed scale for controls (buttons, rows) and for large surfaces (cards). */
+  pressScale: { control: 0.97, surface: 0.985 },
+  spring: {
+    /** Snappy, no visible overshoot — presses and toggles. */
+    press: { damping: 26, stiffness: 420, mass: 0.7 },
+    /** A single soft overshoot — modals, sheets, things that arrive. */
+    enter: { damping: 20, stiffness: 240, mass: 0.9 },
+  },
+} as const;
+
+/**
+ * Layout constants shared by the shell. `contentMaxWidth` keeps a reading column
+ * on a desktop browser — react-native-web will happily stretch a card to 1200px
+ * otherwise. `tabBarHeight` is the bar's own height without the safe-area inset,
+ * which `Screen` reserves so scrolled content never ends underneath it.
+ */
+export const layout = {
+  contentMaxWidth: 760,
+  tabBarHeight: 64,
 } as const;
