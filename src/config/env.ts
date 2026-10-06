@@ -6,7 +6,7 @@
 export const env = {
   appName: process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt',
   defaultCurrency: process.env.EXPO_PUBLIC_DEFAULT_CURRENCY ?? 'EUR',
-  // Path the web app is served under ("/tripit" on GitHub Pages, "" locally) — inlined at build
+  // Path the web app is served under ("" at a domain root, "/<repo>" on a Pages project site) — inlined at build
   // time by babel-preset-expo from `experiments.baseUrl` in app.config.ts.
   webBaseUrl: process.env.EXPO_BASE_URL ?? '',
   // Falls back to a syntactically-valid placeholder (never a real backend)

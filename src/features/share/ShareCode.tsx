@@ -13,8 +13,8 @@ import { formatCode } from './crypto';
 const QR_CELL_PX = 7;
 
 /** The link a phone camera opens straight into the Receive screen, code filled in. On web,
- * expo-linking's createURL ignores the base path the app is served under (/tripit on GitHub
- * Pages), so the URL is built from the current origin plus that base instead. */
+ * expo-linking's createURL ignores the base path the app is served under (when it's served under a
+ * sub-path), so the URL is built from the current origin plus that base instead. */
 export function receiveUrl(code: string): string {
   if (Platform.OS === 'web') {
     return `${window.location.origin}${env.webBaseUrl}/receive?code=${code}`;

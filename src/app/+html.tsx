@@ -5,9 +5,9 @@ import type { ReactNode } from 'react';
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
-// Matches app.config.ts's webBasePath — the Pages deploy serves this app
-// under /tripit/, not the domain root, so static files in public/ (which
-// Expo copies through as-is) need that prefix too.
+// Matches app.config.ts's webBasePath — if the app is ever served under a
+// sub-path, static files in public/ (which Expo copies through as-is) need
+// that prefix too. Empty for the current root deploy.
 const basePath = process.env.EXPO_WEB_BASE_PATH ?? '';
 const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
 

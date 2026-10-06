@@ -99,6 +99,9 @@ function RootLayoutNav() {
           override this later. */}
       <Head>
         <title>{env.appName}</title>
+        {/* The web build is a single-page app (web.output 'single'), which skips +html.tsx —
+            so the home-screen icon link has to be declared here to reach the page. */}
+        <link rel="apple-touch-icon" href={`${env.webBaseUrl}/apple-touch-icon.png`} />
       </Head>
       {!loading && session && onLoginScreen ? <Redirect href="/" /> : null}
       <Stack>

@@ -2,11 +2,11 @@ import type { ExpoConfig } from 'expo/config';
 
 const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
 
-// GitHub Pages serves this as a project site under /tripit/, not at the
-// domain root — Expo Router needs to know that at export time so every
-// asset/route URL it generates is prefixed correctly. Only the Pages
-// deploy workflow sets EXPO_WEB_BASE_PATH; local dev and native builds
-// leave it unset and serve from "/" as normal.
+// Set EXPO_WEB_BASE_PATH only when the web app is served under a sub-path
+// (e.g. a GitHub Pages *project* site, /<repo>/) — Expo Router then prefixes
+// every asset/route URL it generates. The current deploy is the org's root
+// site (tripit-app.github.io), so it's unset everywhere and the app serves
+// from "/".
 const webBasePath = process.env.EXPO_WEB_BASE_PATH ?? '';
 
 const paperLight = '#F7F1E6';
@@ -22,10 +22,10 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.rubben249.tripit',
+    bundleIdentifier: 'com.tripitapp.tripit',
   },
   android: {
-    package: 'com.rubben249.tripit',
+    package: 'com.tripitapp.tripit',
     adaptiveIcon: {
       backgroundColor: paperLight,
       foregroundImage: './assets/images/android-icon-foreground.png',
