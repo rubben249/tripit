@@ -47,6 +47,8 @@ export function BackupSection() {
         title: 'Restore this backup?',
         message: `It has ${plural(s.trips, 'trip')}, ${plural(s.reservations, 'reservation')}, ${plural(s.notes, 'note')}, ${plural(s.tasks, 'task')} and ${plural(s.photos, 'photo')}. Anything already on this device stays as it is — only what's missing is added.`,
         confirmLabel: 'Restore',
+        // Restoring only adds what is missing, so it must not wear the delete button.
+        destructive: false,
       });
       if (!ok) return;
       setBusy(true);
