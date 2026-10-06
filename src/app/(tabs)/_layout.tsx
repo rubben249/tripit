@@ -1,13 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type ColorValue,
+  type GestureResponderEvent,
+} from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePressFeedback } from '@/lib/motion';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TabLayout() {
   const theme = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -22,9 +32,10 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
-          height: 58 + theme.space.sm,
-          paddingTop: theme.space.xs,
+          borderTopColor: theme.colors.borderSoft,
+          height: theme.layout.tabBarHeight + insets.bottom,
+          paddingTop: theme.space.sm,
+          paddingBottom: insets.bottom,
         },
         tabBarLabelStyle: {
           fontFamily: theme.fontFamily.mono,
@@ -32,24 +43,21 @@ export default function TabLayout() {
           textTransform: 'uppercase',
           letterSpacing: 0.4,
         },
+        tabBarItemStyle: { paddingTop: 2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Trips',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="briefcase-outline" size={size} color={color} />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="briefcase" />,
         }}
       />
       <Tabs.Screen
         name="map"
         options={{
           title: 'Map',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="map" />,
         }}
       />
       <Tabs.Screen
@@ -70,27 +78,46 @@ export default function TabLayout() {
         name="now"
         options={{
           title: 'Now',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" size={size} color={color} />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="time" />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'You',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="person" />,
         }}
       />
     </Tabs>
   );
 }
 
+/**
+ * The active tab switches its icon from outline to filled. Color alone carried
+ * the whole state before, which is both a contrast risk and invisible to anyone
+ * who reads shape faster than hue.
+ */
+function TabIcon({
+  name,
+  color,
+  size,
+  focused,
+}: {
+  name: 'briefcase' | 'map' | 'time' | 'person';
+  color: ColorValue;
+  size: number;
+  focused: boolean;
+}) {
+  return (
+    <View style={styles.icon}>
+      <Ionicons name={focused ? name : `${name}-outline`} size={size} color={color} />
+    </View>
+  );
+}
+
 function AddTabIcon() {
   const theme = useTheme();
-  return <Ionicons name="add" size={24} color={theme.colors.onInk} />;
+  return <Ionicons name="add" size={26} color={theme.colors.onInk} />;
 }
 
 interface AddTabButtonProps {
@@ -100,19 +127,31 @@ interface AddTabButtonProps {
 
 function AddTabButton({ children, onPress }: AddTabButtonProps) {
   const theme = useTheme();
+  const press = usePressFeedback(theme.motion.pressScale.control);
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={styles.wrap}>
-      {({ pressed }) => (
-        <View
-          style={[
-            styles.button,
-            { backgroundColor: theme.colors.accent, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          {children}
-        </View>
-      )}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Quick add"
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      onHoverIn={press.onHoverIn}
+      onHoverOut={press.onHoverOut}
+      style={styles.wrap}
+    >
+      <Animated.View
+        style={[
+          styles.button,
+          press.animatedStyle,
+          {
+            backgroundColor: press.hovered ? theme.colors.steel : theme.colors.accent,
+            ...theme.elevation.floating,
+          },
+        ]}
+      >
+        {children}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -123,14 +162,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
+  icon: { alignItems: 'center' },
   button: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginTop: -14,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginTop: -16,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.25)',
-    elevation: 4,
   },
 });

@@ -28,11 +28,13 @@ export default function TripLayout() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}
+        style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: theme.colors.borderSoft }}
         contentContainerStyle={{
           paddingHorizontal: theme.space.lg,
-          paddingVertical: theme.space.xs,
-          gap: theme.space.lg,
+          gap: theme.space.xs,
+          width: '100%',
+          maxWidth: theme.layout.contentMaxWidth,
+          alignSelf: 'center',
         }}
       >
         {SECTIONS.map((section) => {
@@ -55,6 +57,11 @@ export default function TripLayout() {
   );
 }
 
+/**
+ * Section tabs carry an underline, not just a color change: an accent-tinted
+ * label against paper is a weak "you are here", and it disappears entirely for
+ * anyone who can't separate the two hues.
+ */
 const TripTabLink = forwardRef<
   View,
   Omit<PressableProps, 'style'> & { label: string; active: boolean }
@@ -66,24 +73,46 @@ const TripTabLink = forwardRef<
     <Pressable
       ref={ref}
       {...pressableProps}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
-        paddingHorizontal: theme.space.md,
-        paddingVertical: theme.space.sm,
-        borderRadius: theme.radius.sm,
-        backgroundColor: active ? theme.colors.surfaceAlt : 'transparent',
-        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+        paddingHorizontal: theme.space.sm,
+        paddingTop: theme.space.sm,
+        paddingBottom: theme.space.sm,
+        opacity: pressed ? 0.7 : 1,
       })}
     >
       <Text
         style={[
           theme.type.data,
-          { fontSize: 15, color: active ? theme.colors.accent : theme.colors.textMuted },
+          {
+            fontSize: 14,
+            letterSpacing: 0.6,
+            fontFamily: active ? theme.fontFamily.monoMedium : theme.fontFamily.mono,
+            color: active
+              ? theme.colors.text
+              : hovered
+                ? theme.colors.text
+                : theme.colors.textMuted,
+          },
         ]}
       >
         {label.toUpperCase()}
       </Text>
+      <View
+        style={{
+          height: 2,
+          borderRadius: 1,
+          marginTop: theme.space.sm,
+          backgroundColor: active
+            ? theme.colors.accent
+            : hovered
+              ? theme.colors.border
+              : 'transparent',
+        }}
+      />
     </Pressable>
   );
 });
