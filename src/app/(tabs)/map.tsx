@@ -5,7 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlobeMap } from '@/features/map/GlobeMap';
 import type { FocusRequest } from '@/features/map/GlobeMap.types';
 import { CityCard, CountryCard, PlaceCard, TripCard } from '@/features/map/MapCards';
-import { DayFilter, Legend, RefreshButton, TripChip } from '@/features/map/MapOverlays';
+import {
+  DayFilter,
+  Legend,
+  RefreshButton,
+  TripChip,
+  ZoomControls,
+} from '@/features/map/MapOverlays';
 import { useAllCities, useMapBackfill, useRefreshMap } from '@/features/map/hooks';
 import {
   boundsOf,
@@ -116,6 +122,11 @@ export default function MapScreen() {
       ? (focusedDays.find((d) => d.id === dayFocus.dayId) ?? null)
       : null;
 
+  /** Day id → the heading the place list groups under when every day is shown at once. */
+  const dayLabels = new Map(
+    focusedDays.map((d) => [d.id, `Day ${d.dayIndex + 1} · ${formatDayLabel(d.date)}`] as const),
+  );
+
   const highlightedPlaces = highlightTripIds.flatMap((tripId) => placesByTrip.get(tripId) ?? []);
   const shownPlaces = activeDay
     ? highlightedPlaces.filter((p) => p.booking.dayId === activeDay.id)
@@ -221,6 +232,7 @@ export default function MapScreen() {
           dayLabel={
             activeDay ? `Day ${activeDay.dayIndex + 1} · ${formatDayLabel(activeDay.date)}` : null
           }
+          dayLabels={dayLabels}
           onSelectPlace={selectPlace}
           onClose={close}
         />
@@ -296,6 +308,17 @@ export default function MapScreen() {
             Add cities to a trip and they&apos;ll light up here.
           </Text>
         )}
+      </View>
+
+      <View
+        style={{
+          pointerEvents: 'box-none',
+          position: 'absolute',
+          right: theme.space.lg,
+          top: '38%',
+        }}
+      >
+        <ZoomControls onZoom={(steps) => requestFocus({ zoomBy: steps })} />
       </View>
 
       <View

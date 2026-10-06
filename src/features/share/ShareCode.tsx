@@ -1,3 +1,5 @@
+import * as Clipboard from 'expo-clipboard';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -5,6 +7,9 @@ import { useNow } from '@/lib/useNow';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { formatCode } from './crypto';
+
+/** How long the button stays on "Copied" before going back to "Copy". */
+const COPIED_FOR_MS = 2000;
 
 /**
  * The code, big enough to read out across a table, with a live countdown.
@@ -28,6 +33,30 @@ export function ShareCode({
 }) {
   const theme = useTheme();
   const now = useNow(1000);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
+  const onCopy = async () => {
+    // A browser can refuse the clipboard (permissions, an insecure origin). Saying
+    // so beats a button that looks like it did nothing.
+    let state: 'copied' | 'failed' = 'copied';
+    try {
+      await Clipboard.setStringAsync(formatCode(code));
+    } catch {
+      state = 'failed';
+    }
+    setCopyState(state);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopyState('idle'), COPIED_FOR_MS);
+  };
+
   const secondsLeft = Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / 1000));
   const expired = secondsLeft === 0;
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
@@ -73,9 +102,25 @@ export function ShareCode({
           </Button>
         </>
       ) : (
-        <Text style={[theme.type.data, { color: theme.colors.accent, textAlign: 'center' }]}>
-          Valid for {mmss} · works for everyone who uses it in time
-        </Text>
+        <>
+          <Button
+            variant={copyState === 'copied' ? 'primary' : 'secondary'}
+            icon={
+              copyState === 'copied'
+                ? 'checkmark'
+                : copyState === 'failed'
+                  ? 'alert-circle-outline'
+                  : 'copy-outline'
+            }
+            onPress={onCopy}
+            accessibilityLabel={copyState === 'copied' ? 'Code copied' : 'Copy code'}
+          >
+            {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy by hand' : 'Copy'}
+          </Button>
+          <Text style={[theme.type.data, { color: theme.colors.accent, textAlign: 'center' }]}>
+            Valid for {mmss} · works for everyone who uses it in time
+          </Text>
+        </>
       )}
     </View>
   );

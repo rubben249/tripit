@@ -14,6 +14,8 @@ export interface FocusRequest {
   zoom?: number;
   /** Cap for `bounds`, so a single point doesn't zoom to street level unless asked. */
   maxZoom?: number;
+  /** Steps to zoom from wherever the camera is now (+1 in, -1 out), for the on-screen buttons. */
+  zoomBy?: number;
 }
 
 export interface GlobeMapProps {

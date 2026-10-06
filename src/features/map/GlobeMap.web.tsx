@@ -464,7 +464,9 @@ export function GlobeMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !focus) return;
-    if (focus.world && containerRef.current) {
+    if (focus.zoomBy) {
+      map.easeTo({ zoom: map.getZoom() + focus.zoomBy, duration: 220, essential: true });
+    } else if (focus.world && containerRef.current) {
       map.flyTo({
         center: DEFAULT_CENTER,
         zoom: worldZoom(containerRef.current),

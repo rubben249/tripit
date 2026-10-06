@@ -211,3 +211,52 @@ export function RefreshButton({
     </Pressable>
   );
 }
+
+/**
+ * Zoom buttons. The map had none: on a phone the only way out of a close-up was a
+ * pinch, and the panel over the bottom half left little room to make one.
+ */
+export function ZoomControls({ onZoom }: { onZoom: (steps: number) => void }) {
+  const theme = useTheme();
+  const floating = useFloatingStyle();
+
+  return (
+    <View style={[floating, { overflow: 'hidden' }]}>
+      <ZoomButton label="Zoom in" icon="add" onPress={() => onZoom(1)} />
+      <View style={{ height: 1, backgroundColor: theme.colors.border }} />
+      <ZoomButton label="Zoom out" icon="remove" onPress={() => onZoom(-1)} />
+    </View>
+  );
+}
+
+function ZoomButton({
+  label,
+  icon,
+  onPress,
+}: {
+  label: string;
+  icon: 'add' | 'remove';
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: hovered ? theme.colors.surfaceAlt : 'transparent',
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Ionicons name={icon} size={22} color={theme.colors.text} />
+    </Pressable>
+  );
+}

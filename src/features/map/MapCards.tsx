@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -20,20 +20,54 @@ import type { MapCity } from './mapData';
 import { useFloatingStyle } from './MapOverlays';
 import { routeColorKey, type Route } from './routes';
 
-function CardShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+/**
+ * The panel that floats over the map. Its body folds away to a single line, because
+ * at street zoom the list was covering the very points it describes and there was no
+ * way to get it out of the way short of closing it and losing the selection.
+ */
+function CardShell({
+  header,
+  children,
+  onClose,
+}: {
+  header: ReactNode;
+  children?: ReactNode;
+  onClose: () => void;
+}) {
   const theme = useTheme();
   const floating = useFloatingStyle();
+  const [collapsed, setCollapsed] = useState(false);
+  const foldable = !!children;
+
   return (
     <View style={[floating, { padding: theme.space.md, gap: theme.space.sm, maxWidth: 440 }]}>
-      <Pressable
-        onPress={onClose}
-        accessibilityLabel="Close"
-        hitSlop={8}
-        style={{ position: 'absolute', top: theme.space.sm, right: theme.space.sm, zIndex: 1 }}
-      >
-        <Ionicons name="close" size={20} color={theme.colors.textMuted} />
-      </Pressable>
-      {children}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.sm }}>
+        <View style={{ flex: 1, gap: 2 }}>{header}</View>
+        {foldable ? (
+          <Pressable
+            onPress={() => setCollapsed((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={collapsed ? 'Expand' : 'Collapse'}
+            accessibilityState={{ expanded: !collapsed }}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={collapsed ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={theme.colors.textMuted}
+            />
+          </Pressable>
+        ) : null}
+        <Pressable
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={8}
+        >
+          <Ionicons name="close" size={20} color={theme.colors.textMuted} />
+        </Pressable>
+      </View>
+      {foldable && !collapsed ? <>{children}</> : null}
     </View>
   );
 }
@@ -44,20 +78,52 @@ function seenSummary(places: Place[]): string {
   return `${places.length} place${places.length === 1 ? '' : 's'} · ${seen} seen`;
 }
 
-/** Numbered places in time order. The badge marks a place as seen; the row flies to it. */
+/**
+ * Numbered places in time order. The badge marks a place as seen; the row flies to it.
+ *
+ * With `dayLabels`, consecutive places of the same day sit under that day's heading, so
+ * the whole trip reads day by day without having to filter it down to one.
+ */
 function PlaceList({
   places,
+  dayLabels,
   onSelectPlace,
 }: {
   places: Place[];
+  dayLabels?: Map<string, string>;
   onSelectPlace: (bookingId: string) => void;
 }) {
   const theme = useTheme();
   if (places.length === 0) return null;
+
+  // Grouped up front rather than while mapping: the heading depends on the row
+  // before it, and that bookkeeping does not belong inside a render callback.
+  const rows: { place: Place; heading: string | null }[] = [];
+  let previousDayId: string | null | undefined;
+  for (const place of places) {
+    const dayId = place.booking.dayId;
+    const heading =
+      dayLabels && dayId !== previousDayId ? (dayLabels.get(dayId ?? '') ?? null) : null;
+    rows.push({ place, heading });
+    previousDayId = dayId;
+  }
+
   return (
     <ScrollView style={{ maxHeight: 230 }} contentContainerStyle={{ gap: 2 }}>
-      {places.map((place) => (
-        <PlaceRow key={place.booking.id} place={place} onPress={onSelectPlace} />
+      {rows.map(({ place, heading }) => (
+        <View key={place.booking.id}>
+          {heading ? (
+            <Text
+              style={[
+                theme.type.label,
+                { color: theme.colors.accent, marginTop: theme.space.sm, marginBottom: 2 },
+              ]}
+            >
+              {heading.toUpperCase()}
+            </Text>
+          ) : null}
+          <PlaceRow place={place} onPress={onSelectPlace} />
+        </View>
       ))}
       <View style={{ height: theme.space.xs }} />
     </ScrollView>
@@ -144,6 +210,7 @@ export function TripCard({
   places,
   routes,
   dayLabel,
+  dayLabels,
   onSelectPlace,
   onClose,
 }: {
@@ -152,23 +219,35 @@ export function TripCard({
   routes: Route[];
   /** Set while the day filter is on, e.g. "Day 3 · Sat 30 Aug". */
   dayLabel: string | null;
+  /** Day id → heading, used to group the list when every day is shown at once. */
+  dayLabels?: Map<string, string>;
   onSelectPlace: (bookingId: string) => void;
   onClose: () => void;
 }) {
   const theme = useTheme();
   return (
-    <CardShell onClose={onClose}>
-      <TripNameLink tripId={trip.id} name={trip.name} large />
-      <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-        {dayLabel
-          ? `${dayLabel} · `
-          : trip.startDate && trip.endDate
-            ? `${formatDateRange(trip.startDate, trip.endDate)} · `
-            : ''}
-        {seenSummary(places)}
-      </Text>
+    <CardShell
+      onClose={onClose}
+      header={
+        <>
+          <TripNameLink tripId={trip.id} name={trip.name} large />
+          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+            {dayLabel
+              ? `${dayLabel} · `
+              : trip.startDate && trip.endDate
+                ? `${formatDateRange(trip.startDate, trip.endDate)} · `
+                : ''}
+            {seenSummary(places)}
+          </Text>
+        </>
+      }
+    >
       <RouteList routes={routes} />
-      <PlaceList places={places} onSelectPlace={onSelectPlace} />
+      <PlaceList
+        places={places}
+        dayLabels={dayLabel ? undefined : dayLabels}
+        onSelectPlace={onSelectPlace}
+      />
     </CardShell>
   );
 }
@@ -186,10 +265,14 @@ export function CountryCard({
 }) {
   const theme = useTheme();
   return (
-    <CardShell onClose={onClose}>
-      <Text style={[theme.type.section, { color: theme.colors.text }]}>
-        {countryFlag(iso)} {countryName(iso)}
-      </Text>
+    <CardShell
+      onClose={onClose}
+      header={
+        <Text style={[theme.type.section, { color: theme.colors.text }]}>
+          {countryFlag(iso)} {countryName(iso)}
+        </Text>
+      }
+    >
       <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: theme.space.sm }}>
         {trips.map(({ trip, places }) => (
           <View key={trip.id} style={{ gap: 2 }}>
@@ -218,18 +301,24 @@ export function CityCard({
 }) {
   const theme = useTheme();
   return (
-    <CardShell onClose={onClose}>
-      <Text style={[theme.type.section, { color: theme.colors.text }]}>
-        {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
-        {city.name}
-      </Text>
-      <TripNameLink tripId={city.tripId} name={city.tripName} />
-      <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-        {city.arrivalDate && city.departureDate
-          ? `${formatDateRange(city.arrivalDate, city.departureDate)} · `
-          : ''}
-        {seenSummary(places)}
-      </Text>
+    <CardShell
+      onClose={onClose}
+      header={
+        <>
+          <Text style={[theme.type.section, { color: theme.colors.text }]}>
+            {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
+            {city.name}
+          </Text>
+          <TripNameLink tripId={city.tripId} name={city.tripName} />
+          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+            {city.arrivalDate && city.departureDate
+              ? `${formatDateRange(city.arrivalDate, city.departureDate)} · `
+              : ''}
+            {seenSummary(places)}
+          </Text>
+        </>
+      }
+    >
       <PlaceList places={places} onSelectPlace={onSelectPlace} />
     </CardShell>
   );
@@ -252,27 +341,31 @@ export function PlaceCard({
   const toggle = () => setSeen.mutate({ bookingId: place.booking.id, seen: !place.seen });
 
   return (
-    <CardShell onClose={onClose}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
-        <PlaceBadge
-          number={place.number}
-          seen={place.seen}
-          title={place.booking.title}
-          onToggle={toggle}
-          size={38}
-        />
-        <View style={{ flex: 1, gap: 2, paddingRight: theme.space.lg }}>
-          <Text style={[theme.type.title, { fontSize: 18, color: theme.colors.text }]}>
-            {place.booking.title}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name={category.icon} size={14} color={category.color} />
-            <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-              {category.label} · {formatPlaceWhen(place)}
+    <CardShell
+      onClose={onClose}
+      header={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
+          <PlaceBadge
+            number={place.number}
+            seen={place.seen}
+            title={place.booking.title}
+            onToggle={toggle}
+            size={38}
+          />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[theme.type.title, { fontSize: 18, color: theme.colors.text }]}>
+              {place.booking.title}
             </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name={category.icon} size={14} color={category.color} />
+              <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+                {category.label} · {formatPlaceWhen(place)}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
+      }
+    >
       {where ? (
         <Text style={[theme.type.body, { fontSize: 15, color: theme.colors.text }]}>{where}</Text>
       ) : null}
