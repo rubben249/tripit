@@ -1,9 +1,10 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { CheckRow } from '@/components/CheckRow';
+import { FieldLabel } from '@/components/SectionTitle';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
@@ -84,7 +85,12 @@ export default function ShareTripScreen() {
             sync.
           </Text>
           <ShareCode code={share.code} expiresAt={share.expiresAt} onRenew={onCreate} />
-          <Button onPress={() => setShare(null)} style={{ alignSelf: 'center' }}>
+          <Button
+            variant="secondary"
+            icon="options-outline"
+            onPress={() => setShare(null)}
+            style={{ alignSelf: 'center' }}
+          >
             Change what to share
           </Button>
         </View>
@@ -130,9 +136,7 @@ export default function ShareTripScreen() {
           </View>
 
           <View style={{ gap: theme.space.xs }}>
-            <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-              YOUR NAME (SHOWN TO THE RECEIVER)
-            </Text>
+            <FieldLabel>Your name (shown to the receiver)</FieldLabel>
             <TextField
               value={senderName}
               onChangeText={setName}
@@ -145,9 +149,30 @@ export default function ShareTripScreen() {
             <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
           ) : null}
 
-          <Button variant="primary" onPress={onCreate} disabled={busy} fullWidth>
+          <Button
+            variant="primary"
+            icon="qr-code-outline"
+            loading={busy}
+            onPress={onCreate}
+            fullWidth
+          >
             {busy ? 'Encrypting…' : 'Create share code'}
           </Button>
+
+          <View
+            style={{
+              marginTop: theme.space.sm,
+              paddingTop: theme.space.md,
+              borderTopWidth: 1,
+              borderTopColor: theme.colors.borderSoft,
+            }}
+          >
+            <Link href="/receive" asChild>
+              <Button variant="ghost" icon="download-outline" align="start" fullWidth>
+                Receive a trip instead
+              </Button>
+            </Link>
+          </View>
         </View>
       )}
     </Screen>

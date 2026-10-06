@@ -3,14 +3,17 @@ import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { useItineraryDays } from '@/features/itinerary/hooks';
 import { NoteComposer } from '@/features/notes/NotesFeed';
 import { getFocusTrips } from '@/features/now/focusTrips';
 import { getEffectiveStatus } from '@/features/trips/status';
 import { useTrips } from '@/features/trips/hooks';
-import { useHoverable } from '@/lib/useHoverable';
+import { usePressFeedback } from '@/lib/motion';
 import { useTheme } from '@/theme/ThemeProvider';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface Action {
   key: string;
@@ -73,7 +76,23 @@ export function QuickAddMenu() {
       title: 'Note',
       subtitle: trip ? `General, or for ${trip.name}` : 'A general note',
     },
-    { key: 'trip', icon: 'airplane-outline', title: 'New trip', href: '/trip/new' },
+    {
+      key: 'trip',
+      icon: 'airplane-outline',
+      title: 'New trip',
+      subtitle: 'Name it, set the dates, add cities',
+      href: '/trip/new',
+    },
+    // Receiving a trip is adding one, so it belongs with the other ways to add —
+    // it used to live only at the bottom of You, behind Backup, where nobody
+    // would look for it while standing next to the person sharing the code.
+    {
+      key: 'receive',
+      icon: 'qr-code-outline',
+      title: 'Receive a shared trip',
+      subtitle: 'Scan a QR or type an 8-character code',
+      href: '/receive',
+    },
   );
 
   return (
@@ -112,35 +131,48 @@ export function QuickAddMenu() {
 
 function ActionRow({ action, onPress }: { action: Action; onPress: () => void }) {
   const theme = useTheme();
-  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+  const press = usePressFeedback(theme.motion.pressScale.surface);
+  const lit = press.hovered;
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}
+      onHoverIn={press.onHoverIn}
+      onHoverOut={press.onHoverOut}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       accessibilityRole="button"
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.space.md,
-        padding: theme.space.md,
-        borderRadius: theme.radius.md,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: hovered || pressed ? theme.colors.surfaceAlt : theme.colors.surface,
-      })}
+      accessibilityLabel={action.title}
+      style={[
+        press.animatedStyle,
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.space.md,
+          padding: theme.space.md,
+          borderRadius: theme.radius.md,
+          borderWidth: 1,
+          borderColor: lit ? theme.colors.accent : theme.colors.border,
+          backgroundColor: theme.colors.surface,
+          ...(lit ? theme.elevation.raised : null),
+        },
+      ]}
     >
       <View
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
+          width: 42,
+          height: 42,
+          borderRadius: theme.radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: theme.colors.surfaceAlt,
+          backgroundColor: lit ? theme.colors.accent : theme.colors.accentSoft,
         }}
       >
-        <Ionicons name={action.icon} size={22} color={theme.colors.accent} />
+        <Ionicons
+          name={action.icon}
+          size={21}
+          color={lit ? theme.colors.onInk : theme.colors.accent}
+        />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={[theme.type.title, { color: theme.colors.text }]}>{action.title}</Text>
@@ -150,7 +182,7 @@ function ActionRow({ action, onPress }: { action: Action; onPress: () => void })
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
-    </Pressable>
+      <Ionicons name="chevron-forward" size={18} color={theme.colors.textFaint} />
+    </AnimatedPressable>
   );
 }
