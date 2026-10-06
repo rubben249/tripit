@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { ModalCard } from '@/components/ModalCard';
 import { useTheme } from '@/theme/ThemeProvider';
 
 interface ConfirmOptions {
@@ -74,49 +75,30 @@ function ConfirmDialog({
   const theme = useTheme();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable
+    <ModalCard visible={visible} onRequestClose={onCancel}>
+      <Text style={[theme.type.section, { color: theme.colors.text }]}>{title}</Text>
+      {message ? (
+        <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>{message}</Text>
+      ) : null}
+      <View
         style={{
-          flex: 1,
-          backgroundColor: 'rgba(23,17,11,0.5)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: theme.space.lg,
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          gap: theme.space.sm,
+          marginTop: theme.space.xs,
         }}
-        onPress={onCancel}
       >
-        <Pressable
-          onPress={(e) => e.stopPropagation()}
-          style={{
-            width: '100%',
-            maxWidth: 360,
-            backgroundColor: theme.colors.surface,
-            borderRadius: theme.radius.lg,
-            padding: theme.space.md,
-            gap: theme.space.sm,
-          }}
+        <Button variant="ghost" onPress={onCancel}>
+          {cancelLabel}
+        </Button>
+        <Button
+          variant={destructive ? 'danger' : 'primary'}
+          icon={destructive ? 'trash-outline' : undefined}
+          onPress={onConfirm}
         >
-          <Text style={[theme.type.title, { color: theme.colors.text }]}>{title}</Text>
-          {message ? (
-            <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>{message}</Text>
-          ) : null}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-              gap: theme.space.sm,
-              marginTop: theme.space.xs,
-            }}
-          >
-            <Button variant="secondary" onPress={onCancel}>
-              {cancelLabel}
-            </Button>
-            <Button variant={destructive ? 'danger' : 'primary'} onPress={onConfirm}>
-              {confirmLabel}
-            </Button>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+          {confirmLabel}
+        </Button>
+      </View>
+    </ModalCard>
   );
 }
