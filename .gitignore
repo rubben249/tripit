@@ -54,3 +54,7 @@ supabase/.temp/
 
 # Session handoff notes — local only, never committed
 docs/HANDOFF.md
+
+# Impeccable design hook — per-developer state, never committed
+.impeccable/config.local.json
+.impeccable/hook.cache.json
