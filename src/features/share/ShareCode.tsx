@@ -1,26 +1,15 @@
-import * as Linking from 'expo-linking';
 import qrcodeGenerator from 'qrcode-generator';
 import { useMemo } from 'react';
-import { Image, Platform, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { env } from '@/config/env';
 import { useNow } from '@/lib/useNow';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { formatCode } from './crypto';
+import { receiveUrl, shareHost } from './receiveUrl';
 
 const QR_CELL_PX = 7;
-
-/** The link a phone camera opens straight into the Receive screen, code filled in. On web,
- * expo-linking's createURL ignores the base path the app is served under (when it's served under a
- * sub-path), so the URL is built from the current origin plus that base instead. */
-export function receiveUrl(code: string): string {
-  if (Platform.OS === 'web') {
-    return `${window.location.origin}${env.webBaseUrl}/receive?code=${code}`;
-  }
-  return Linking.createURL('/receive', { queryParams: { code } });
-}
 
 function qrDataUrl(text: string): string {
   const qr = qrcodeGenerator(0, 'M');
@@ -42,6 +31,7 @@ export function ShareCode({
   const theme = useTheme();
   const now = useNow(1000);
   const url = receiveUrl(code);
+  const host = shareHost();
   const qr = useMemo(() => qrDataUrl(url), [url]);
   const secondsLeft = Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / 1000));
   const expired = secondsLeft === 0;
@@ -90,9 +80,16 @@ export function ShareCode({
           </Button>
         </>
       ) : (
-        <Text style={[theme.type.data, { color: theme.colors.accent }]}>
-          Valid for {mmss} · works for everyone who uses it in time
-        </Text>
+        <View style={{ alignItems: 'center', gap: theme.space.xs }}>
+          <Text style={[theme.type.data, { color: theme.colors.accent }]}>
+            Valid for {mmss} · works for everyone who uses it in time
+          </Text>
+          {host ? (
+            <Text style={[theme.type.caption, { color: theme.colors.textFaint }]}>
+              Opens {host}
+            </Text>
+          ) : null}
+        </View>
       )}
     </View>
   );

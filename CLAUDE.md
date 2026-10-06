@@ -53,6 +53,7 @@ Por petición explícita del usuario, cualquier dato que pueda cambiar en el fut
 
 - `EXPO_PUBLIC_APP_NAME` — nombre de la app mostrado en la UI (valor por defecto: `TripIt`). Se usa `EXPO_PUBLIC_` porque Expo solo expone al cliente las variables con ese prefijo; nunca poner secretos ahí.
 - `EXPO_PUBLIC_DEFAULT_CURRENCY` — moneda principal por defecto (valor por defecto: `EUR`), cambiable por el usuario en ajustes sin tocar código.
+- `EXPO_PUBLIC_WEB_URL` — dirección pública de la web desplegada (valor por defecto: `https://tripit-app.github.io`, sin barra final). **El QR de compartir se construye con esta variable, no con el origen actual**: el dispositivo que comparte puede estar en `localhost`, en una IP de red local o en una build nativa, y ninguna de esas direcciones la puede abrir el móvil que recibe. Si el origen actual ya es público (otro dominio propio), se respeta ese. Lógica en `src/features/share/receiveUrl.ts`.
 - Secretos de servidor (claves de Supabase service role, tokens de terceros, etc.) van **solo** en el entorno del servidor (Supabase Edge Functions / GitHub Actions secrets), nunca en `EXPO_PUBLIC_*` ni en el repositorio.
 - `.env.example` se mantiene en el repo con todas las claves documentadas y valores de ejemplo; `.env` real está en `.gitignore`.
 
