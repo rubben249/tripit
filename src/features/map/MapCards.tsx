@@ -18,6 +18,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 import type { MapCity } from './mapData';
 import { useFloatingStyle } from './MapOverlays';
+import { routeColorKey, type Route } from './routes';
 
 function CardShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   const theme = useTheme();
@@ -107,14 +108,50 @@ function PlaceRow({ place, onPress }: { place: Place; onPress: (bookingId: strin
   );
 }
 
+/** The legs drawn on the map, spelled out — so a dashed line reads as "flight" without a legend. */
+function RouteList({ routes }: { routes: Route[] }) {
+  const theme = useTheme();
+  if (routes.length === 0) return null;
+  return (
+    <View style={{ gap: 2 }}>
+      {routes.map((route) => {
+        const color = theme.map.route[routeColorKey(route.mode) as keyof typeof theme.map.route];
+        return (
+          <View
+            key={route.id}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}
+          >
+            <Ionicons
+              name={route.mode ? getCategory(route.mode).icon : 'help-circle-outline'}
+              size={15}
+              color={color}
+            />
+            <Text
+              numberOfLines={1}
+              style={[theme.type.caption, { flex: 1, color: theme.colors.textMuted }]}
+            >
+              {route.fromName} → {route.toName} · {route.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function TripCard({
   trip,
   places,
+  routes,
+  dayLabel,
   onSelectPlace,
   onClose,
 }: {
   trip: Trip;
   places: Place[];
+  routes: Route[];
+  /** Set while the day filter is on, e.g. "Day 3 · Sat 30 Aug". */
+  dayLabel: string | null;
   onSelectPlace: (bookingId: string) => void;
   onClose: () => void;
 }) {
@@ -123,11 +160,14 @@ export function TripCard({
     <CardShell onClose={onClose}>
       <TripNameLink tripId={trip.id} name={trip.name} large />
       <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-        {trip.startDate && trip.endDate
-          ? `${formatDateRange(trip.startDate, trip.endDate)} · `
-          : ''}
+        {dayLabel
+          ? `${dayLabel} · `
+          : trip.startDate && trip.endDate
+            ? `${formatDateRange(trip.startDate, trip.endDate)} · `
+            : ''}
         {seenSummary(places)}
       </Text>
+      <RouteList routes={routes} />
       <PlaceList places={places} onSelectPlace={onSelectPlace} />
     </CardShell>
   );

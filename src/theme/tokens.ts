@@ -98,7 +98,11 @@ export interface MapColors {
   /** Places marked as seen: a quieter disc with a check instead of the number. */
   placeSeen: string;
   placeSeenMark: string;
+  /** Legs between cities, by how you travel them (`unknown` = no transport booked yet). */
+  route: Record<RouteColorKey, string>;
 }
+
+export type RouteColorKey = 'flight' | 'train' | 'bus' | 'boat_ferry' | 'unknown';
 
 export const mapPalettes: Record<ColorScheme, MapColors> = {
   light: {
@@ -117,6 +121,13 @@ export const mapPalettes: Record<ColorScheme, MapColors> = {
     placeText: '#FFFBF4',
     placeSeen: '#D9C6A8',
     placeSeenMark: '#6B4A33',
+    route: {
+      flight: '#8A5A34',
+      train: '#4A3222',
+      bus: '#A9825A',
+      boat_ferry: '#5E7A6B',
+      unknown: '#9C8B76',
+    },
   },
   dark: {
     style: 'https://tiles.openfreemap.org/styles/dark',
@@ -134,6 +145,13 @@ export const mapPalettes: Record<ColorScheme, MapColors> = {
     placeText: '#17110B',
     placeSeen: '#4A3828',
     placeSeenMark: '#C9AE8C',
+    route: {
+      flight: '#E0A86B',
+      train: '#C9AE8C',
+      bus: '#E0B57E',
+      boat_ferry: '#8FB3A2',
+      unknown: '#9C8B76',
+    },
   },
 };
 

@@ -10,6 +10,7 @@ import type { MapColors } from '@/theme/tokens';
 
 import type { GlobeMapProps } from './GlobeMap.types';
 import { mainlandBounds, type MapCity, type MapCountry, type MapPlace } from './mapData';
+import { routeColorKey, type Route, type RouteStyle } from './routes';
 
 /**
  * The world globe, on MapLibre GL JS v5 with free OpenFreeMap tiles (no key, no card).
@@ -65,6 +66,31 @@ function placesGeoJson(places: MapPlace[]): FeatureCollection {
   };
 }
 
+function routesGeoJson(routes: Route[], colors: MapColors): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: routes.map((r) => ({
+      type: 'Feature',
+      properties: {
+        id: r.id,
+        style: r.style,
+        color: colors.route[routeColorKey(r.mode) as keyof MapColors['route']],
+      },
+      geometry: { type: 'LineString', coordinates: r.coordinates },
+    })),
+  };
+}
+
+/** One line layer per leg style, because MapLibre can't take a dash pattern from the data.
+ * Dashes are in line-widths, so they keep their look at every zoom. */
+const ROUTE_LAYERS: { style: RouteStyle; dash?: number[]; width: number; opacity: number }[] = [
+  { style: 'solid', width: 1, opacity: 0.9 },
+  { style: 'dashed', dash: [2.2, 1.4], width: 1, opacity: 0.9 },
+  { style: 'dotted', dash: [0.1, 2], width: 1, opacity: 0.9 },
+  // No transport booked for this leg yet: thinner and softer, so it reads as a loose end.
+  { style: 'faint', dash: [0.1, 2.6], width: 0.7, opacity: 0.6 },
+];
+
 const SEEN_ICON = 'place-seen-check';
 
 /** The check shown on seen places — drawn on a canvas because the map's fonts have no ✓ glyph. */
@@ -118,6 +144,7 @@ function setupLayers(
   cities: MapCity[],
   highlightTripIds: string[],
   places: MapPlace[],
+  routes: Route[],
 ) {
   map.setProjection({ type: 'globe' });
   map.setSky({
@@ -166,6 +193,34 @@ function setupLayers(
     },
     firstLabel,
   );
+
+  map.addSource('trip-routes', { type: 'geojson', data: routesGeoJson(routes, colors) });
+  for (const layer of ROUTE_LAYERS) {
+    map.addLayer(
+      {
+        id: `trip-route-${layer.style}`,
+        type: 'line',
+        source: 'trip-routes',
+        filter: ['==', ['get', 'style'], layer.style],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-opacity': layer.opacity,
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            1,
+            1.6 * layer.width,
+            6,
+            3.2 * layer.width,
+          ],
+          ...(layer.dash ? { 'line-dasharray': layer.dash } : {}),
+        },
+      },
+      firstLabel,
+    );
+  }
 
   map.addSource('trip-cities', {
     type: 'geojson',
@@ -257,6 +312,7 @@ export function GlobeMap({
   cities,
   highlightTripIds,
   places,
+  routes,
   focus,
   onCityPress,
   onPlacePress,
@@ -277,6 +333,7 @@ export function GlobeMap({
     cities,
     highlightTripIds,
     places,
+    routes,
     onCityPress,
     onPlacePress,
     onCountryPress,
@@ -325,6 +382,7 @@ export function GlobeMap({
             l.cities,
             l.highlightTripIds,
             l.places,
+            l.routes,
           );
           setReady(true);
         });
@@ -398,7 +456,10 @@ export function GlobeMap({
       citiesGeoJson(cities, highlightTripIds),
     );
     (map.getSource('trip-places') as GeoJSONSource | undefined)?.setData(placesGeoJson(places));
-  }, [countries, cities, highlightTripIds, places, colors, ready]);
+    (map.getSource('trip-routes') as GeoJSONSource | undefined)?.setData(
+      routesGeoJson(routes, colors),
+    );
+  }, [countries, cities, highlightTripIds, places, routes, colors, ready]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -1,6 +1,7 @@
 import type { MapColors } from '@/theme/tokens';
 
 import type { Bounds, MapCity, MapCountry, MapPlace } from './mapData';
+import type { Route } from './routes';
 
 /** A camera move asked for by the screen. `key` changes on every request, so asking for the same
  * place twice still flies there again. */
@@ -23,6 +24,8 @@ export interface GlobeMapProps {
   highlightTripIds: string[];
   /** Numbered booked places to draw (those of the trips being looked at). */
   places: MapPlace[];
+  /** Legs between the cities of the trips being looked at. */
+  routes: Route[];
   focus: FocusRequest | null;
   onCityPress: (cityId: string) => void;
   onPlacePress: (bookingId: string) => void;

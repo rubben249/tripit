@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
+import type { ItineraryDay } from '@/features/itinerary/types';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -103,6 +104,71 @@ export function TripChip({
       )}
       <Text style={[theme.type.body, { fontSize: 15, color: theme.colors.text }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+function Pill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const theme = useTheme();
+  const floating = useFloatingStyle();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={({ pressed }) => [
+        floating,
+        {
+          borderRadius: theme.radius.pill,
+          borderColor: active ? theme.colors.accent : theme.colors.border,
+          borderWidth: active ? 2 : 1,
+          paddingHorizontal: theme.space.md,
+          paddingVertical: 6,
+          opacity: pressed ? 0.8 : hovered ? 0.92 : 1,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          theme.type.caption,
+          { fontSize: 14, color: active ? theme.colors.accent : theme.colors.text },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Narrows the focused trip's map down to a single itinerary day: its places and the leg traveled
+ * that day. Only shown while one trip is in focus — there's no "day 3" across several trips. */
+export function DayFilter({
+  days,
+  dayId,
+  onSelect,
+}: {
+  days: ItineraryDay[];
+  dayId: string | null;
+  onSelect: (dayId: string | null) => void;
+}) {
+  const theme = useTheme();
+  if (days.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: theme.space.lg, gap: theme.space.xs }}
+    >
+      <Pill label="All days" active={dayId === null} onPress={() => onSelect(null)} />
+      {days.map((day) => (
+        <Pill
+          key={day.id}
+          label={`Day ${day.dayIndex + 1}`}
+          active={dayId === day.id}
+          onPress={() => onSelect(day.id)}
+        />
+      ))}
+    </ScrollView>
   );
 }
 

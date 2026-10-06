@@ -51,3 +51,6 @@ supabase/.temp/
 
 # Local-only toolchain (e.g. pinned Node runtime), never committed
 .tools/
+
+# Session handoff notes — local only, never committed
+docs/HANDOFF.md
