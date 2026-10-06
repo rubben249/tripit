@@ -183,7 +183,7 @@ export default function ReceiveScreen() {
           {fromLink ? (
             <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
               Use TripIt from your home screen? It keeps its trips apart from the browser — open it
-              there, go to You → Receive a trip, and type {formatCode(fromLink)}.
+              there, tap + → Receive a shared trip, and type {formatCode(fromLink)}.
             </Text>
           ) : null}
         </View>

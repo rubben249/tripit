@@ -92,7 +92,7 @@ export default function TripsScreen() {
           </Button>
           <Button
             variant="secondary"
-            icon="qr-code-outline"
+            icon="keypad-outline"
             fullWidth
             onPress={() => router.push('/receive')}
           >
@@ -140,7 +140,7 @@ export default function TripsScreen() {
         </Button>
         <Button
           variant="ghost"
-          icon="qr-code-outline"
+          icon="keypad-outline"
           fullWidth
           onPress={() => router.push('/receive')}
         >

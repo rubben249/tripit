@@ -80,9 +80,8 @@ export default function ShareTripScreen() {
       ) : share ? (
         <View style={{ gap: theme.space.lg }}>
           <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-            On the other phone, scan this with the camera — or open TripIt, go to You → Receive a
-            trip and type the code. They get their own copy: later changes on either side don&apos;t
-            sync.
+            On the other phone, open TripIt, tap + → Receive a shared trip, and type this code. They
+            get their own copy: later changes on either side don&apos;t sync.
           </Text>
           <ShareCode code={share.code} expiresAt={share.expiresAt} onRenew={onCreate} />
           <Button
@@ -149,13 +148,7 @@ export default function ShareTripScreen() {
             <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
           ) : null}
 
-          <Button
-            variant="primary"
-            icon="qr-code-outline"
-            loading={busy}
-            onPress={onCreate}
-            fullWidth
-          >
+          <Button variant="primary" icon="key-outline" loading={busy} onPress={onCreate} fullWidth>
             {busy ? 'Encrypting…' : 'Create share code'}
           </Button>
 

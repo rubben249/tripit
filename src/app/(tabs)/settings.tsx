@@ -32,7 +32,7 @@ export default function YouScreen() {
       <View style={{ gap: theme.space.sm }}>
         <Link href="/receive" asChild>
           <SettingsRow
-            icon="qr-code-outline"
+            icon="keypad-outline"
             label="Receive a shared trip"
             hint="Also on the + button"
           />

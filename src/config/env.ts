@@ -9,14 +9,6 @@ export const env = {
   // Path the web app is served under ("" at a domain root, "/<repo>" on a Pages project site) — inlined at build
   // time by babel-preset-expo from `experiments.baseUrl` in app.config.ts.
   webBaseUrl: process.env.EXPO_BASE_URL ?? '',
-  // Where the app lives for someone who is not this device: the address a share
-  // QR points at. It can't be derived from the running app, because the app may
-  // be served from localhost, a LAN IP or a native bundle — none of which the
-  // receiving phone can open. No trailing slash.
-  publicWebUrl: (process.env.EXPO_PUBLIC_WEB_URL ?? 'https://tripit-app.github.io').replace(
-    /\/+$/,
-    '',
-  ),
   // Falls back to a syntactically-valid placeholder (never a real backend)
   // so builds without a configured .env — a fresh checkout, CI without
   // secrets — still construct the Supabase client instead of crashing the

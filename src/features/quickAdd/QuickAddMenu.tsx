@@ -88,9 +88,9 @@ export function QuickAddMenu() {
     // would look for it while standing next to the person sharing the code.
     {
       key: 'receive',
-      icon: 'qr-code-outline',
+      icon: 'keypad-outline',
       title: 'Receive a shared trip',
-      subtitle: 'Scan a QR or type an 8-character code',
+      subtitle: 'Type the 8-character code someone shared with you',
       href: '/receive',
     },
   );

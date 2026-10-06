@@ -165,7 +165,7 @@ export default function TripOverviewScreen() {
           sit together at the top as real actions instead of trailing the title. */}
       <View style={{ flexDirection: 'row', gap: theme.space.sm, flexWrap: 'wrap' }}>
         <Link href={`/share/${trip.id}`} asChild>
-          <Button variant="primary" icon="qr-code-outline" style={{ flexGrow: 1 }}>
+          <Button variant="primary" icon="share-outline" style={{ flexGrow: 1 }}>
             Share trip
           </Button>
         </Link>

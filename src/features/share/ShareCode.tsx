@@ -1,24 +1,22 @@
-import qrcodeGenerator from 'qrcode-generator';
-import { useMemo } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { useNow } from '@/lib/useNow';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { formatCode } from './crypto';
-import { receiveUrl, shareHost } from './receiveUrl';
 
-const QR_CELL_PX = 7;
-
-function qrDataUrl(text: string): string {
-  const qr = qrcodeGenerator(0, 'M');
-  qr.addData(text);
-  qr.make();
-  return qr.createDataURL(QR_CELL_PX, 2);
-}
-
-/** QR + short code with a live countdown; once the 3 minutes are up, offers a fresh code. */
+/**
+ * The code, big enough to read out across a table, with a live countdown.
+ *
+ * There was a QR here. It encoded a link to the web app, and on the receiving
+ * phone that link could only ever open the browser — which on iOS holds storage
+ * separate from the app added to the home screen, where the trips actually live.
+ * So a scan either imported the trip into the wrong place or, when the app was
+ * already open, failed outright: the local database is wa-sqlite over OPFS, and
+ * only one context per origin can hold it (see CLAUDE.md). Typing the code
+ * inside the app someone already uses has neither problem.
+ */
 export function ShareCode({
   code,
   expiresAt,
@@ -30,9 +28,6 @@ export function ShareCode({
 }) {
   const theme = useTheme();
   const now = useNow(1000);
-  const url = receiveUrl(code);
-  const host = shareHost();
-  const qr = useMemo(() => qrDataUrl(url), [url]);
   const secondsLeft = Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / 1000));
   const expired = secondsLeft === 0;
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
@@ -41,55 +36,46 @@ export function ShareCode({
     <View style={{ alignItems: 'center', gap: theme.space.md }}>
       <View
         style={{
-          padding: theme.space.sm,
+          alignSelf: 'stretch',
+          alignItems: 'center',
+          paddingVertical: theme.space.xl,
+          paddingHorizontal: theme.space.md,
           borderRadius: theme.radius.md,
-          backgroundColor: '#FFFFFF',
-          opacity: expired ? 0.15 : 1,
+          borderWidth: 1,
+          borderColor: expired ? theme.colors.border : theme.colors.accent,
+          backgroundColor: theme.colors.surface,
         }}
       >
-        <Image
-          source={{ uri: qr }}
-          accessibilityLabel={`QR code for ${formatCode(code)}`}
-          style={{ width: 240, height: 240 }}
-          resizeMode="contain"
-        />
+        <Text
+          selectable
+          accessibilityLabel={`Share code ${formatCode(code).split('').join(' ')}`}
+          style={[
+            theme.type.display,
+            {
+              fontFamily: theme.fontFamily.monoMedium,
+              letterSpacing: 4,
+              color: expired ? theme.colors.textFaint : theme.colors.text,
+              textDecorationLine: expired ? 'line-through' : 'none',
+            },
+          ]}
+        >
+          {formatCode(code)}
+        </Text>
       </View>
-
-      <Text
-        selectable
-        style={[
-          theme.type.display,
-          {
-            fontFamily: theme.fontFamily.monoMedium,
-            letterSpacing: 4,
-            color: expired ? theme.colors.textMuted : theme.colors.text,
-            textDecorationLine: expired ? 'line-through' : 'none',
-          },
-        ]}
-      >
-        {formatCode(code)}
-      </Text>
 
       {expired ? (
         <>
           <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
             This code has expired.
           </Text>
-          <Button variant="primary" onPress={onRenew}>
+          <Button variant="primary" icon="refresh-outline" onPress={onRenew}>
             Create a new code
           </Button>
         </>
       ) : (
-        <View style={{ alignItems: 'center', gap: theme.space.xs }}>
-          <Text style={[theme.type.data, { color: theme.colors.accent }]}>
-            Valid for {mmss} · works for everyone who uses it in time
-          </Text>
-          {host ? (
-            <Text style={[theme.type.caption, { color: theme.colors.textFaint }]}>
-              Opens {host}
-            </Text>
-          ) : null}
-        </View>
+        <Text style={[theme.type.data, { color: theme.colors.accent, textAlign: 'center' }]}>
+          Valid for {mmss} · works for everyone who uses it in time
+        </Text>
       )}
     </View>
   );
