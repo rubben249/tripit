@@ -41,6 +41,18 @@ Todo el stack debe funcionar en planes gratuitos, sin tarjeta de crédito cuando
 - Auth: `src/lib/supabase.ts` (cliente, con un storage adapter que evita tocar `window` durante el renderizado estático en servidor), `src/features/auth/` (`AuthProvider` + `LoginScreen`), `app/login.tsx` y `app/auth/callback.tsx`. Flujo magic-link con PKCE (`flowType: 'pkce'`) para que el callback use `?code=` en vez de un fragmento `#access_token=`, así funciona igual en web y en los deep links nativos (`tripit://auth/callback`, vía `expo-linking`). Desde el pivote local-first el layout raíz **ya no** redirige a `/login` si no hay sesión: el login queda disponible pero es opcional (ver la sección "Decisión de producto" de arriba).
 - Pendiente de verificar con un dispositivo/navegador real (no solo curl): completar el flujo de magic-link de principio a fin (pedir el enlace, tocarlo, llegar autenticado a `/`). Para eso hace falta además añadir las redirect URLs del proyecto (`tripit://*` y la URL de despliegue web) en el dashboard, Authentication → URL Configuration — todavía no están añadidas.
 
+## Base de datos local en web — un solo contexto por origen
+
+`expo-sqlite` en web es wa-sqlite sobre OPFS (`AccessHandlePoolVFS`): abre *sync access handles* exclusivos sobre su pool de ficheros, así que **solo una pestaña/contexto por origen puede tener la base de datos abierta**. Una segunda pestaña (o la PWA instalada en segundo plano mientras un enlace de viaje compartido se abre en el navegador) no puede abrirla, y cada motor lo cuenta distinto:
+
+- Chrome/Edge: `NoModificationAllowedError: ... Access Handles cannot be created ...`
+- Safari: `UnknownError: The operation failed for an unknown transient reason (e.g. out of memory)` — engañoso, no hay problema de memoria.
+- Chrome a veces **no resuelve nunca** la promesa de apertura (de ahí el timeout de 8 s en `src/lib/db/client.ts`).
+
+Peor aún: el worker de `expo-sqlite` asigna `_sqlite3` **antes** de crear el VFS (`maybeInitAsync` en `expo-sqlite/web/worker.ts`), y no revierte ese estado si el VFS falla. A partir de ahí toda llamada lanza `Invalid VFS state` mientras viva el worker, es decir, mientras viva la página. **Reintentar en la misma página no puede funcionar: hay que recargar.**
+
+Por eso: `src/lib/db/errors.ts` traduce las tres variantes a un mensaje accionable, `src/lib/db/recover.ts` recarga en web, y `ErrorNotice` es el bloque que lo muestra. La lista de viajes trata el error como error — nunca como "no hay viajes", que se leería como pérdida de datos.
+
 ## CI / GitHub Actions
 
 - `.github/workflows/ci.yml`: typecheck, lint, format check, tests y export web en cada push/PR a `main`.

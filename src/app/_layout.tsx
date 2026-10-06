@@ -14,13 +14,22 @@ import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { ProgressBar } from '@/components/ProgressBar';
+import { isDatabaseBusyError } from '@/lib/db/errors';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { purgeExpiredTrash } from '@/features/trips/api';
 import { env } from '@/config/env';
 import { fontAssets } from '@/theme/tokens';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Another tab holding the local database is not a transient fault: retrying
+      // just multiplies the wait before the screen can say what is wrong.
+      retry: (failureCount, error) => !isDatabaseBusyError(error) && failureCount < 2,
+    },
+  },
+});
 
 export { ErrorBoundary } from 'expo-router';
 

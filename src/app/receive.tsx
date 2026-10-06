@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { ErrorNotice } from '@/components/ErrorNotice';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
@@ -12,6 +13,8 @@ import { formatCode, normalizeCode, shareCryptoSupported } from '@/features/shar
 import { importBundle } from '@/features/transfer/api';
 import { summarizeBundle } from '@/features/transfer/bundle';
 import { formatDateRange } from '@/lib/dates';
+import { describeDatabaseError, isDatabaseBusyError } from '@/lib/db/errors';
+import { recoverFromDatabaseError } from '@/lib/db/recover';
 import { plural } from '@/lib/plural';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -27,7 +30,7 @@ export default function ReceiveScreen() {
   // Arriving from the QR link fetches right away — the 3-minute clock is already ticking.
   const [submitted, setSubmitted] = useState<string | null>(fromLink);
   const [inputError, setInputError] = useState('');
-  const [importError, setImportError] = useState('');
+  const [importError, setImportError] = useState<unknown>(null);
   const [importing, setImporting] = useState(false);
   const share = useQuery({
     queryKey: ['share', submitted],
@@ -39,8 +42,12 @@ export default function ReceiveScreen() {
   });
   const bundle = share.data ?? null;
   const busy = share.isFetching || importing;
+  const lookupError = share.error instanceof Error ? share.error.message : '';
+  // The import writes to the local database, which only one browser context can
+  // hold — that failure needs its own explanation, not a red line of platform text.
+  const blocked = isDatabaseBusyError(importError);
   const error =
-    inputError || importError || (share.error instanceof Error ? share.error.message : '');
+    inputError || (blocked ? '' : importError ? describeDatabaseError(importError) : lookupError);
 
   const lookUp = (raw: string) => {
     setInputError('');
@@ -56,13 +63,14 @@ export default function ReceiveScreen() {
   const onImport = async () => {
     if (!bundle) return;
     setImporting(true);
+    setImportError(null);
     try {
       const inserted = await importBundle(bundle.tables, 'freshIds');
       await queryClient.invalidateQueries();
       const tripId = inserted.trips[0]?.id;
       router.replace(typeof tripId === 'string' ? `/trip/${tripId}` : '/');
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Could not add the trip.');
+      setImportError(err ?? new Error('Could not add the trip.'));
       setImporting(false);
     }
   };
@@ -122,12 +130,28 @@ export default function ReceiveScreen() {
             It becomes your own copy: changes you make stay with you, and later changes by the
             sender won&apos;t reach it.
           </Text>
-          {error ? (
-            <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
-          ) : null}
-          <Button variant="primary" icon="checkmark" loading={busy} onPress={onImport} fullWidth>
-            {busy ? 'Adding…' : 'Add to my trips'}
-          </Button>
+          {blocked ? (
+            <ErrorNotice
+              error={importError}
+              onRetry={() => recoverFromDatabaseError(onImport)}
+              retrying={importing}
+            />
+          ) : (
+            <>
+              {error ? (
+                <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
+              ) : null}
+              <Button
+                variant="primary"
+                icon="checkmark"
+                loading={busy}
+                onPress={onImport}
+                fullWidth
+              >
+                {busy ? 'Adding…' : 'Add to my trips'}
+              </Button>
+            </>
+          )}
         </View>
       ) : (
         <View style={{ gap: theme.space.md }}>

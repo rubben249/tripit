@@ -4,9 +4,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 
 import { Button } from '@/components/Button';
+import { ErrorNotice } from '@/components/ErrorNotice';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TripCardSkeleton } from '@/components/Skeleton';
+import { recoverFromDatabaseError } from '@/lib/db/recover';
 import { stagger } from '@/lib/motion';
 import { useHoverable } from '@/lib/useHoverable';
 import { getEffectiveStatus } from '@/features/trips/status';
@@ -26,7 +28,7 @@ const GROUPS: { key: TripStatus; label: string }[] = [
 export default function TripsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { data: trips, isLoading } = useTrips();
+  const { data: trips, isLoading, isError, error, refetch, isRefetching } = useTrips();
   const [activeGroup, setActiveGroup] = useState<TripStatus>('ongoing');
 
   const grouped = useMemo(() => {
@@ -54,6 +56,21 @@ export default function TripsScreen() {
           <TripCardSkeleton />
           <TripCardSkeleton />
         </View>
+      </Screen>
+    );
+  }
+
+  // Without this the next branch would greet a database it could not open with
+  // "No trips yet", which reads as "your trips are gone".
+  if (isError) {
+    return (
+      <Screen>
+        <ScreenTitle>My trips</ScreenTitle>
+        <ErrorNotice
+          error={error}
+          retrying={isRefetching}
+          onRetry={() => recoverFromDatabaseError(refetch)}
+        />
       </Screen>
     );
   }
