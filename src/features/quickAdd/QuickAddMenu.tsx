@@ -83,15 +83,15 @@ export function QuickAddMenu() {
       subtitle: 'Name it, set the dates, add cities',
       href: '/trip/new',
     },
-    // Receiving a trip is adding one, so it belongs with the other ways to add —
-    // it used to live only at the bottom of You, behind Backup, where nobody
-    // would look for it while standing next to the person sharing the code.
+    // Sharing belongs with the other ways to add a trip — it used to live only
+    // at the bottom of You, behind Backup, where nobody would look for it while
+    // standing next to the person reading out the code.
     {
-      key: 'receive',
-      icon: 'keypad-outline',
-      title: 'Receive a shared trip',
-      subtitle: 'Type the 8-character code someone shared with you',
-      href: '/receive',
+      key: 'share',
+      icon: 'share-outline',
+      title: 'Share a trip',
+      subtitle: 'Send one of yours, or receive one someone sends you',
+      href: '/share',
     },
   );
 

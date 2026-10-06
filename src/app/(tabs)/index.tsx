@@ -140,11 +140,11 @@ export default function TripsScreen() {
         </Button>
         <Button
           variant="ghost"
-          icon="keypad-outline"
+          icon="share-outline"
           fullWidth
-          onPress={() => router.push('/receive')}
+          onPress={() => router.push('/share')}
         >
-          Receive a shared trip
+          Share a trip
         </Button>
       </View>
     </Screen>

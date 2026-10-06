@@ -202,17 +202,17 @@ export default function ReceiveScreen() {
         }}
       >
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-          Sending one instead? Open the trip you want to send and tap Share trip.
+          Wanted to send one instead?
         </Text>
-        <Link href="/" asChild>
+        <Link href="/share" asChild>
           <Button
             variant="secondary"
-            icon="briefcase-outline"
+            icon="arrow-up-circle-outline"
             iconEnd="chevron-forward"
             align="start"
             fullWidth
           >
-            Go to my trips
+            Send one of my trips
           </Button>
         </Link>
       </View>

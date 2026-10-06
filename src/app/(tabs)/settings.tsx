@@ -29,19 +29,9 @@ export default function YouScreen() {
 
       <BackupSection />
 
-      <View style={{ gap: theme.space.sm }}>
-        <Link href="/receive" asChild>
-          <SettingsRow
-            icon="keypad-outline"
-            label="Receive a shared trip"
-            hint="Also on the + button"
-          />
-        </Link>
-
-        <Link href="/trash" asChild>
-          <SettingsRow icon="trash-outline" label="Trash" value={trashedTrips?.length ?? 0} />
-        </Link>
-      </View>
+      <Link href="/trash" asChild>
+        <SettingsRow icon="trash-outline" label="Trash" value={trashedTrips?.length ?? 0} />
+      </Link>
 
       <Text style={[theme.type.label, { color: theme.colors.textFaint, textAlign: 'center' }]}>
         {env.appName.toUpperCase()}
