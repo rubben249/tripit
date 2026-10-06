@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { isReservationCategory } from '@/features/bookings/categories';
+import { useExportTripDocument } from '@/features/export/hooks';
 import { CityPlaceField } from '@/features/itinerary/CityPlaceField';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
 import { locateCity } from '@/features/map/geocodeCities';
@@ -28,6 +29,7 @@ export default function TripOverviewScreen() {
   const reservationCount = (bookings ?? []).filter((b) =>
     isReservationCategory(b.categoryKey),
   ).length;
+  const exportDoc = useExportTripDocument(id);
   const addCity = useAddCity(id);
   const trashTrip = useTrashTrip();
   const updateTrip = useUpdateTrip(id);
@@ -129,8 +131,16 @@ export default function TripOverviewScreen() {
               Share…
             </Button>
           </Link>
+          {exportDoc.supported ? (
+            <Button variant="secondary" size="sm" onPress={exportDoc.exportDocument}>
+              {exportDoc.busy ? 'Writing…' : 'Word document'}
+            </Button>
+          ) : null}
         </View>
       )}
+      {exportDoc.error ? (
+        <Text style={[theme.type.caption, { color: theme.colors.warn }]}>{exportDoc.error}</Text>
+      ) : null}
 
       <View style={{ gap: theme.space.xs }}>
         {trip.startDate && trip.endDate ? (
