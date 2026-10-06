@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 import { forwardRef } from 'react';
 import { Pressable, Text, View, type PressableProps } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Link, useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
 import { formatDayLabel } from '@/lib/dates';
+import { stagger } from '@/lib/motion';
 import { useHoverable } from '@/lib/useHoverable';
 import { getDayHighlights } from '@/features/itinerary/daySummary';
 import { useBookings, useItineraryDays } from '@/features/itinerary/hooks';
@@ -36,8 +39,10 @@ export default function ItineraryScreen() {
       <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
         Tap a day to see and edit everything planned for it.
       </Text>
-      {days.map((day) => (
-        <DayRow key={day.id} tripId={id} day={day} bookings={bookings ?? []} />
+      {days.map((day, i) => (
+        <Animated.View key={day.id} entering={FadeInDown.duration(240).delay(stagger(i))}>
+          <DayRow tripId={id} day={day} bookings={bookings ?? []} />
+        </Animated.View>
       ))}
     </Screen>
   );
@@ -69,6 +74,8 @@ const DayRowLink = forwardRef<
   const theme = useTheme();
   const { hovered, onHoverIn, onHoverOut } = useHoverable();
   const highlights = getDayHighlights(day, bookings);
+  // Today is the one day someone opens this screen to find while traveling.
+  const isToday = day.date === format(new Date(), 'yyyy-MM-dd');
 
   return (
     <Pressable
@@ -83,15 +90,21 @@ const DayRowLink = forwardRef<
         padding: theme.space.lg,
         borderRadius: theme.radius.md,
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
-        opacity: pressed ? 0.75 : hovered ? 0.92 : 1,
+        borderColor: isToday ? theme.colors.accent : theme.colors.border,
+        backgroundColor: hovered ? theme.colors.surfaceAlt : theme.colors.surface,
+        opacity: pressed ? 0.8 : 1,
+        ...(hovered ? theme.elevation.raised : null),
       })}
     >
       <View style={{ flex: 1, gap: 6 }}>
-        <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
-          Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
+          <Text style={[theme.type.section, { color: theme.colors.text, flexShrink: 1 }]}>
+            Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
+          </Text>
+          {isToday ? (
+            <Text style={[theme.type.label, { color: theme.colors.accent }]}>TODAY</Text>
+          ) : null}
+        </View>
         {highlights.length === 0 ? (
           <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
             Nothing planned yet
@@ -107,7 +120,7 @@ const DayRowLink = forwardRef<
           ))
         )}
       </View>
-      <Ionicons name="chevron-forward" size={22} color={theme.colors.textMuted} />
+      <Ionicons name="chevron-forward" size={20} color={theme.colors.textFaint} />
     </Pressable>
   );
 });

@@ -83,9 +83,7 @@ export default function ExpensesScreen() {
 
       {byCategory.length > 0 ? (
         <View style={{ gap: theme.space.sm }}>
-          <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
-            By category
-          </Text>
+          <Text style={[theme.type.section, { color: theme.colors.text }]}>By category</Text>
           {byCategory.map(({ category, amount }) => (
             <View
               key={category.key}
@@ -240,9 +238,7 @@ function CurrencyConverter({ defaultFrom }: { defaultFrom: string }) {
         backgroundColor: theme.colors.surface,
       }}
     >
-      <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
-        Currency converter
-      </Text>
+      <Text style={[theme.type.section, { color: theme.colors.text }]}>Currency converter</Text>
 
       <View style={{ gap: theme.space.xs }}>
         <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>AMOUNT</Text>

@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { FieldLabel } from '@/components/SectionTitle';
 import { TextField } from '@/components/TextField';
 import { useSettings } from '@/features/settings/hooks';
 import { useCreateTrip } from '@/features/trips/hooks';
@@ -44,10 +45,12 @@ export default function NewTripScreen() {
   return (
     <Screen scroll>
       <Stack.Screen options={{ title: 'New trip', presentation: 'modal' }} />
-      <ScreenTitle>New trip</ScreenTitle>
+      <ScreenTitle subtitle="Only the name is required — dates and currency can come later.">
+        New trip
+      </ScreenTitle>
 
       <View style={{ gap: theme.space.xs }}>
-        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>NAME</Text>
+        <FieldLabel>Name</FieldLabel>
         <TextField
           value={name}
           onChangeText={setName}
@@ -58,7 +61,7 @@ export default function NewTripScreen() {
 
       <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
         <View style={{ flex: 1, gap: theme.space.xs }}>
-          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>START DATE</Text>
+          <FieldLabel>Start date</FieldLabel>
           <DateField
             label="Start date"
             value={startDate}
@@ -70,7 +73,7 @@ export default function NewTripScreen() {
           />
         </View>
         <View style={{ flex: 1, gap: theme.space.xs }}>
-          <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>END DATE</Text>
+          <FieldLabel>End date</FieldLabel>
           <DateField
             label="End date"
             value={endDate}
@@ -80,12 +83,13 @@ export default function NewTripScreen() {
           />
         </View>
       </View>
-      <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-        Dates are optional — leave blank to save as a draft.
+      <Text style={[theme.type.caption, { color: theme.colors.textFaint }]}>
+        Dates are optional — leave blank to save as a draft. Once they are set, cities and bookings
+        can only be dated inside them.
       </Text>
 
       <View style={{ gap: theme.space.xs }}>
-        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>CURRENCY</Text>
+        <FieldLabel>Currency</FieldLabel>
         <TextField
           value={currency}
           onChangeText={setCurrency}
@@ -102,9 +106,11 @@ export default function NewTripScreen() {
 
       <Button
         variant="primary"
+        icon="airplane-outline"
+        loading={createTrip.isPending}
         fullWidth
         onPress={onCreate}
-        disabled={!name.trim() || createTrip.isPending}
+        disabled={!name.trim()}
       >
         {createTrip.isPending ? 'Creating…' : 'Create trip'}
       </Button>

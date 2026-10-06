@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { CurrencyField } from '@/components/CurrencyField';
+import { FieldLabel, SectionTitle } from '@/components/SectionTitle';
 import { TextField } from '@/components/TextField';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -16,9 +17,7 @@ export function PreferencesSection() {
 
   return (
     <View style={{ gap: theme.space.md }}>
-      <Text style={[theme.type.title, { fontSize: 20, color: theme.colors.text }]}>
-        Preferences
-      </Text>
+      <SectionTitle>Preferences</SectionTitle>
 
       <Field label="YOUR NAME" hint="Shown to people you share a trip with.">
         {/* Keyed by the saved value so the field resets once settings finish loading. */}
@@ -70,10 +69,10 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   const theme = useTheme();
   return (
     <View style={{ gap: theme.space.xs }}>
-      <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>{label}</Text>
+      <FieldLabel>{label}</FieldLabel>
       {children}
       {hint ? (
-        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>{hint}</Text>
+        <Text style={[theme.type.caption, { color: theme.colors.textFaint }]}>{hint}</Text>
       ) : null}
     </View>
   );
@@ -98,8 +97,9 @@ function ThemeChip({
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
-        paddingHorizontal: theme.space.md,
-        paddingVertical: theme.space.sm,
+        minHeight: 40,
+        justifyContent: 'center',
+        paddingHorizontal: theme.space.lg,
         borderRadius: theme.radius.pill,
         borderWidth: 1,
         borderColor: selected ? theme.colors.accent : theme.colors.border,

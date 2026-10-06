@@ -9,6 +9,7 @@ import { useBookingsForTrips, useCreateNote, useGeneralNotes } from '@/features/
 import type { Booking } from '@/features/itinerary/types';
 import type { Trip } from '@/features/trips/types';
 import { useHoverable } from '@/lib/useHoverable';
+import { SectionTitle } from '@/components/SectionTitle';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /** Where a new note goes: a trip in focus, or nowhere in particular ("general"). */
@@ -37,7 +38,7 @@ export function NotesFeed({ focusTrips }: { focusTrips: Trip[] }) {
 
   return (
     <View style={{ gap: theme.space.sm }}>
-      <Text style={[theme.type.title, { fontSize: 20, color: theme.colors.text }]}>Notes</Text>
+      <SectionTitle>Notes</SectionTitle>
 
       {notes.length === 0 && !adding ? (
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>

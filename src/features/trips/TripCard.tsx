@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { formatDateRange } from '@/lib/dates';
-import { useHoverable } from '@/lib/useHoverable';
+import { usePressFeedback } from '@/lib/motion';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { getEffectiveStatus } from './status';
@@ -16,61 +17,91 @@ const STATUS_LABEL: Record<string, string> = {
   archived: 'Archived',
 };
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void }) {
   const theme = useTheme();
   const effectiveStatus = getEffectiveStatus(trip);
   const isOngoing = effectiveStatus === 'ongoing';
-  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+  const press = usePressFeedback(theme.motion.pressScale.surface);
+
+  // The trip you're on is the dark card in light mode. In dark mode ink is almost
+  // the page background, so the same card would vanish — there it becomes a warm
+  // raised surface with an accent edge, which carries the same "this one" meaning.
+  const onDark = theme.scheme === 'dark';
+  const highlightBackground = onDark ? theme.colors.accentSoft : theme.colors.solid;
+  const titleColor = isOngoing ? theme.colors.onInk : theme.colors.text;
+  const metaColor = isOngoing ? theme.colors.mist : theme.colors.textMuted;
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}
-      style={({ pressed }) => [
+      accessibilityRole="button"
+      accessibilityLabel={`${trip.name}, ${STATUS_LABEL[effectiveStatus] ?? ''}`}
+      onHoverIn={press.onHoverIn}
+      onHoverOut={press.onHoverOut}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      style={[
+        press.animatedStyle,
         {
-          backgroundColor: isOngoing ? theme.colors.ink : theme.colors.surface,
+          backgroundColor: isOngoing
+            ? highlightBackground
+            : press.hovered
+              ? theme.colors.surfaceAlt
+              : theme.colors.surface,
           borderRadius: theme.radius.md,
-          borderWidth: isOngoing ? 0 : 1,
-          borderColor: theme.colors.border,
-          padding: theme.space.md,
+          borderWidth: isOngoing && !onDark ? 0 : 1,
+          borderColor: isOngoing ? theme.colors.accent : theme.colors.border,
+          paddingVertical: theme.space.md,
+          paddingHorizontal: theme.space.md,
           gap: theme.space.xs,
-          opacity: pressed ? 0.85 : hovered ? 0.92 : 1,
+          ...(press.hovered ? theme.elevation.floating : theme.elevation.raised),
         },
       ]}
     >
-      <Text
-        style={[
-          theme.type.title,
-          { fontFamily: theme.fontFamily.display, fontSize: 19 },
-          { color: isOngoing ? theme.colors.onInk : theme.colors.text },
-        ]}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: theme.space.sm,
+        }}
       >
-        {trip.name}
-      </Text>
+        <Text numberOfLines={2} style={[theme.type.section, { color: titleColor, flexShrink: 1 }]}>
+          {trip.name}
+        </Text>
+        <StatusPill label={STATUS_LABEL[effectiveStatus] ?? ''} onInk={isOngoing} />
+      </View>
+
       {trip.startDate && trip.endDate ? (
-        <Text
-          style={[
-            theme.type.caption,
-            { color: isOngoing ? theme.colors.mist : theme.colors.textMuted },
-          ]}
-        >
+        <Text style={[theme.type.data, { fontSize: 13, color: metaColor }]}>
           {formatDateRange(trip.startDate, trip.endDate)}
         </Text>
       ) : null}
       <TripCountdown trip={trip} color={isOngoing ? theme.colors.mist : theme.colors.textMuted} />
-      <View
-        style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.space.xs }}
+    </AnimatedPressable>
+  );
+}
+
+function StatusPill({ label, onInk }: { label: string; onInk: boolean }) {
+  const theme = useTheme();
+  return (
+    <View
+      style={{
+        paddingHorizontal: theme.space.sm,
+        paddingVertical: 3,
+        borderRadius: theme.radius.pill,
+        backgroundColor: onInk ? 'rgba(201,174,140,0.16)' : theme.colors.surfaceAlt,
+        borderWidth: 1,
+        borderColor: onInk ? 'transparent' : theme.colors.borderSoft,
+      }}
+    >
+      <Text
+        style={[theme.type.label, { color: onInk ? theme.colors.accent : theme.colors.textMuted }]}
       >
-        <Text
-          style={[
-            theme.type.data,
-            { fontSize: 10, color: isOngoing ? theme.colors.accent : theme.colors.textMuted },
-          ]}
-        >
-          {STATUS_LABEL[effectiveStatus]?.toUpperCase()}
-        </Text>
-      </View>
-    </Pressable>
+        {label.toUpperCase()}
+      </Text>
+    </View>
   );
 }

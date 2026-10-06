@@ -100,15 +100,21 @@ export function TripNowCard({ trip, now }: { trip: Trip; now: Date }) {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
         {plan ? (
           <Link href={`/trip/${trip.id}/day/${plan.day.id}`} asChild>
-            <Button size="sm">Open today ›</Button>
+            <Button size="sm" variant="secondary" iconEnd="chevron-forward">
+              Open today
+            </Button>
           </Link>
         ) : null}
         <Link href={`/trip/${trip.id}`} asChild>
-          <Button size="sm">Open trip ›</Button>
+          <Button size="sm" variant="secondary" iconEnd="chevron-forward">
+            Open trip
+          </Button>
         </Link>
         {pendingTasks.length > MAX_TASKS ? (
           <Link href={`/trip/${trip.id}/tasks`} asChild>
-            <Button size="sm">All tasks ›</Button>
+            <Button size="sm" variant="ghost" iconEnd="chevron-forward">
+              All tasks
+            </Button>
           </Link>
         ) : null}
       </View>
@@ -119,7 +125,7 @@ export function TripNowCard({ trip, now }: { trip: Trip; now: Date }) {
 function SectionLabel({ children }: { children: string }) {
   const theme = useTheme();
   return (
-    <Text style={[theme.type.data, { fontSize: 12, color: theme.colors.textMuted }]}>
+    <Text style={[theme.type.label, { color: theme.colors.textMuted }]}>
       {children.toUpperCase()}
     </Text>
   );
@@ -175,7 +181,11 @@ function TimelineRow({ item }: { item: TimelineItem }) {
       <Text
         style={[
           theme.type.data,
-          { width: 78, color: active ? theme.colors.accent : theme.colors.textMuted },
+          {
+            width: 78,
+            color: active ? theme.colors.accent : theme.colors.text,
+            fontFamily: active ? theme.fontFamily.monoMedium : theme.fontFamily.mono,
+          },
         ]}
       >
         {item.timeLabel ?? 'All day'}

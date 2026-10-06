@@ -32,8 +32,8 @@ export default function NoteDetailScreen() {
     <Screen scroll>
       <Stack.Screen options={{ title: note.title }} />
       <Link href={`/trip/${id}/notes`} asChild>
-        <Button variant="secondary" size="sm" style={{ alignSelf: 'flex-start' }}>
-          ‹ All notes
+        <Button variant="ghost" size="sm" icon="chevron-back" style={{ alignSelf: 'flex-start' }}>
+          All notes
         </Button>
       </Link>
 
