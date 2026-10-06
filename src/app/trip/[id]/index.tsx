@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Keyboard, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Button } from '@/components/Button';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
+import { SectionTitle } from '@/components/SectionTitle';
 import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
+import { plural } from '@/lib/plural';
+import { stagger } from '@/lib/motion';
 import { isReservationCategory } from '@/features/bookings/categories';
 import { useExportTripDocument } from '@/features/export/hooks';
 import { CityPlaceField } from '@/features/itinerary/CityPlaceField';
@@ -15,6 +19,7 @@ import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
 import { locateCity } from '@/features/map/geocodeCities';
 import { countryFlag } from '@/lib/countries';
 import type { Place } from '@/lib/geocoding';
+import { tripDateBounds } from '@/features/trips/dateBounds';
 import { useTrashTrip, useTrip, useUpdateTrip } from '@/features/trips/hooks';
 import { TripCountdown } from '@/features/trips/TripCountdown';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -42,6 +47,8 @@ export default function TripOverviewScreen() {
   const [draftName, setDraftName] = useState('');
 
   if (!trip) return null;
+
+  const bounds = tripDateBounds(trip);
 
   const onAddCity = async () => {
     const name = newCity.trim();
@@ -94,97 +101,128 @@ export default function TripOverviewScreen() {
 
   return (
     <Screen scroll>
-      {editingName ? (
-        <View style={{ flexDirection: 'row', gap: theme.space.sm, alignItems: 'center' }}>
-          <TextField
-            value={draftName}
-            onChangeText={setDraftName}
-            onSubmitEditing={onSaveRename}
-            autoFocus
-            style={{ flex: 1 }}
-            name="trip-rename"
-          />
-          <Button variant="primary" size="sm" onPress={onSaveRename}>
-            Save
-          </Button>
-          <Button variant="secondary" size="sm" onPress={() => setEditingName(false)}>
-            Cancel
-          </Button>
-        </View>
-      ) : (
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: theme.space.sm,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <Text style={[theme.type.headline, { color: theme.colors.text, flexShrink: 1 }]}>
-            {trip.name}
+      <View style={{ gap: theme.space.sm }}>
+        {editingName ? (
+          <View style={{ flexDirection: 'row', gap: theme.space.sm, alignItems: 'center' }}>
+            <TextField
+              value={draftName}
+              onChangeText={setDraftName}
+              onSubmitEditing={onSaveRename}
+              autoFocus
+              style={{ flex: 1 }}
+              name="trip-rename"
+            />
+            <Button variant="primary" size="sm" icon="checkmark" onPress={onSaveRename}>
+              Save
+            </Button>
+            <Button variant="ghost" size="sm" onPress={() => setEditingName(false)}>
+              Cancel
+            </Button>
+          </View>
+        ) : (
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: theme.space.sm,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={[theme.type.headline, { color: theme.colors.text, flex: 1 }]}>
+              {trip.name}
+            </Text>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="create-outline"
+              accessibilityLabel="Rename trip"
+              onPress={onStartRename}
+            >
+              {''}
+            </Button>
+          </View>
+        )}
+
+        <View style={{ gap: theme.space.xxs }}>
+          {trip.startDate && trip.endDate ? (
+            <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
+              {formatDateRange(trip.startDate, trip.endDate)} ·{' '}
+              {tripDurationNights(trip.startDate, trip.endDate)} nights
+            </Text>
+          ) : (
+            <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
+              Draft — add dates to start planning the itinerary.
+            </Text>
+          )}
+          <Text style={[theme.type.data, { fontSize: 13, color: theme.colors.textFaint }]}>
+            {plural(cities?.length ?? 0, 'city', 'cities')} · {plural(reservationCount, 'booking')}{' '}
+            · {trip.defaultCurrency}
           </Text>
-          <Button variant="secondary" size="sm" onPress={onStartRename}>
-            Rename
-          </Button>
-          <Link href={`/share/${trip.id}`} asChild>
-            <Button variant="secondary" size="sm">
-              Share…
-            </Button>
-          </Link>
-          {exportDoc.supported ? (
-            <Button variant="secondary" size="sm" onPress={exportDoc.exportDocument}>
-              {exportDoc.busy ? 'Writing…' : 'Word document'}
-            </Button>
-          ) : null}
+          <TripCountdown trip={trip} color={theme.colors.accent} size="md" />
         </View>
-      )}
+      </View>
+
+      {/* Share and export are what people reach for once a trip is planned, so they
+          sit together at the top as real actions instead of trailing the title. */}
+      <View style={{ flexDirection: 'row', gap: theme.space.sm, flexWrap: 'wrap' }}>
+        <Link href={`/share/${trip.id}`} asChild>
+          <Button variant="primary" icon="qr-code-outline" style={{ flexGrow: 1 }}>
+            Share trip
+          </Button>
+        </Link>
+        {exportDoc.supported ? (
+          <Button
+            variant="secondary"
+            icon="document-text-outline"
+            loading={exportDoc.busy}
+            style={{ flexGrow: 1 }}
+            onPress={exportDoc.exportDocument}
+          >
+            {exportDoc.busy ? 'Writing…' : 'Word document'}
+          </Button>
+        ) : null}
+      </View>
       {exportDoc.error ? (
         <Text style={[theme.type.caption, { color: theme.colors.warn }]}>{exportDoc.error}</Text>
       ) : null}
 
-      <View style={{ gap: theme.space.xs }}>
-        {trip.startDate && trip.endDate ? (
-          <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-            {formatDateRange(trip.startDate, trip.endDate)} ·{' '}
-            {tripDurationNights(trip.startDate, trip.endDate)} nights
-          </Text>
-        ) : (
-          <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-            Draft — add dates to start planning the itinerary.
-          </Text>
-        )}
-        <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
-          {cities?.length ?? 0} cities · {reservationCount} bookings · {trip.defaultCurrency}
-        </Text>
-        <TripCountdown trip={trip} color={theme.colors.accent} size="md" />
-      </View>
-
       <View style={{ gap: theme.space.md }}>
-        <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>Cities</Text>
-        {(cities ?? []).map((city) => (
-          <View
-            key={city.id}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingVertical: theme.space.md,
-              borderBottomWidth: 1,
-              borderBottomColor: theme.colors.border,
-            }}
-          >
-            <Text style={[theme.type.title, { fontSize: 16, color: theme.colors.text }]}>
-              {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
-              {city.name}
-            </Text>
-            {city.arrivalDate && city.departureDate ? (
-              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
-                {formatDateRange(city.arrivalDate, city.departureDate)}
+        <SectionTitle>Cities</SectionTitle>
+        <View>
+          {(cities ?? []).map((city, i) => (
+            <Animated.View
+              key={city.id}
+              entering={FadeInDown.duration(220).delay(stagger(i))}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: theme.space.sm,
+                paddingVertical: theme.space.md,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.borderSoft,
+              }}
+            >
+              <Text style={[theme.type.title, { color: theme.colors.text, flexShrink: 1 }]}>
+                {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
+                {city.name}
               </Text>
-            ) : null}
-          </View>
-        ))}
+              {city.arrivalDate && city.departureDate ? (
+                <Text style={[theme.type.data, { fontSize: 13, color: theme.colors.textMuted }]}>
+                  {formatDateRange(city.arrivalDate, city.departureDate)}
+                </Text>
+              ) : null}
+            </Animated.View>
+          ))}
+        </View>
 
-        <View style={{ gap: theme.space.sm }}>
+        <View
+          style={{
+            gap: theme.space.sm,
+            padding: theme.space.md,
+            borderRadius: theme.radius.md,
+            backgroundColor: theme.colors.surfaceAlt,
+          }}
+        >
           <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
             <CityPlaceField
               value={newCity}
@@ -192,7 +230,13 @@ export default function TripOverviewScreen() {
               selected={newCityPlace}
               onSelect={setNewCityPlace}
             />
-            <Button variant="primary" onPress={onAddCity}>
+            <Button
+              variant="primary"
+              icon="add"
+              loading={addCity.isPending}
+              onPress={onAddCity}
+              disabled={!newCity.trim()}
+            >
               Add
             </Button>
           </View>
@@ -206,6 +250,9 @@ export default function TripOverviewScreen() {
                   if (date && departureDate && date > departureDate) setDepartureDate(date);
                 }}
                 placeholder="Arrival"
+                minDate={bounds.start}
+                maxDate={bounds.end}
+                rangeHint={bounds.hint}
                 name="new-city-arrival"
               />
             </View>
@@ -215,20 +262,39 @@ export default function TripOverviewScreen() {
                 value={departureDate}
                 onChange={setDepartureDate}
                 placeholder="Departure"
-                minDate={arrivalDate}
+                minDate={arrivalDate ?? bounds.start}
+                maxDate={bounds.end}
+                rangeHint={bounds.hint}
                 name="new-city-departure"
               />
             </View>
           </View>
           <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
-            Add arrival and departure dates to generate that city&apos;s day-by-day itinerary.
+            {bounds.hint
+              ? `${bounds.hint}. Arrival and departure dates generate that city's day-by-day itinerary.`
+              : "Add arrival and departure dates to generate that city's day-by-day itinerary."}
           </Text>
         </View>
       </View>
 
-      <Button variant="danger" onPress={onDeleteTrip} style={{ marginTop: theme.space.md }}>
-        Delete trip
-      </Button>
+      {/* Deleting is kept away from everything else and labelled, so no one reaches
+          it while scanning for the next planning action. */}
+      <View
+        style={{
+          marginTop: theme.space.lg,
+          paddingTop: theme.space.lg,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.borderSoft,
+          gap: theme.space.sm,
+        }}
+      >
+        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+          Deleting moves the trip to Trash for 30 days.
+        </Text>
+        <Button variant="danger" icon="trash-outline" onPress={onDeleteTrip}>
+          Delete trip
+        </Button>
+      </View>
 
       {dialog}
     </Screen>

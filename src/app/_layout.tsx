@@ -10,8 +10,10 @@ import {
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
+import { ProgressBar } from '@/components/ProgressBar';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { purgeExpiredTrash } from '@/features/trips/api';
 import { env } from '@/config/env';
@@ -104,15 +106,33 @@ function RootLayoutNav() {
         <link rel="apple-touch-icon" href={`${env.webBaseUrl}/apple-touch-icon.png`} />
       </Head>
       {!loading && session && onLoginScreen ? <Redirect href="/" /> : null}
-      <Stack>
+      <Stack
+        screenOptions={{
+          // One transition for the whole app: pushes come from the right, modals
+          // rise from the bottom. Web gets a fade instead — a horizontal slide in
+          // a browser tab fights the back button's own feel.
+          animation: Platform.OS === 'web' ? 'fade' : 'slide_from_right',
+          animationDuration: 260,
+          headerTitleStyle: { fontFamily: theme.fontFamily.bodySemiBold },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: theme.colors.background },
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Add' }} />
-        <Stack.Screen name="trip/new" options={{ presentation: 'modal', title: 'New trip' }} />
+        <Stack.Screen
+          name="add"
+          options={{ presentation: 'modal', title: 'Add', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="trip/new"
+          options={{ presentation: 'modal', title: 'New trip', animation: 'slide_from_bottom' }}
+        />
         <Stack.Screen name="trip/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="trash" options={{ title: 'Trash' }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>
+      <ProgressBar />
     </NavigationThemeProvider>
   );
 }

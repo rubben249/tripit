@@ -38,8 +38,8 @@ export default function TaskDetailScreen() {
     <Screen scroll>
       <Stack.Screen options={{ title: task.title }} />
       <Link href={`/trip/${id}/tasks`} asChild>
-        <Button variant="secondary" size="sm" style={{ alignSelf: 'flex-start' }}>
-          ‹ All tasks
+        <Button variant="ghost" size="sm" icon="chevron-back" style={{ alignSelf: 'flex-start' }}>
+          All tasks
         </Button>
       </Link>
 

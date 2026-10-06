@@ -34,8 +34,8 @@ export default function GeneralNoteScreen() {
     <Screen scroll>
       <Stack.Screen options={{ title: note.title }} />
       <Link href="/now" asChild>
-        <Button variant="secondary" size="sm" style={{ alignSelf: 'flex-start' }}>
-          ‹ Now
+        <Button variant="ghost" size="sm" icon="chevron-back" style={{ alignSelf: 'flex-start' }}>
+          Now
         </Button>
       </Link>
 

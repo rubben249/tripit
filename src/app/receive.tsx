@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -77,7 +77,9 @@ export default function ReceiveScreen() {
   return (
     <Screen scroll>
       <Stack.Screen options={{ title: 'Receive a trip', presentation: 'modal' }} />
-      <ScreenTitle>Receive a trip</ScreenTitle>
+      <ScreenTitle subtitle="A copy of someone else's trip lands in your list. Nothing syncs back.">
+        Receive a trip
+      </ScreenTitle>
 
       {!shareCryptoSupported() ? (
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
@@ -123,7 +125,7 @@ export default function ReceiveScreen() {
           {error ? (
             <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
           ) : null}
-          <Button variant="primary" onPress={onImport} disabled={busy} fullWidth>
+          <Button variant="primary" icon="checkmark" loading={busy} onPress={onImport} fullWidth>
             {busy ? 'Adding…' : 'Add to my trips'}
           </Button>
         </View>
@@ -145,7 +147,13 @@ export default function ReceiveScreen() {
           {error ? (
             <Text style={[theme.type.body, { color: theme.colors.warn }]}>{error}</Text>
           ) : null}
-          <Button variant="primary" onPress={() => lookUp(input)} disabled={busy} fullWidth>
+          <Button
+            variant="primary"
+            icon="download-outline"
+            loading={busy}
+            onPress={() => lookUp(input)}
+            fullWidth
+          >
             {busy ? 'Looking…' : 'Get trip'}
           </Button>
           {fromLink ? (
@@ -156,6 +164,34 @@ export default function ReceiveScreen() {
           ) : null}
         </View>
       )}
+
+      {/* The other half of the same job. Someone who opens this screen by mistake —
+          or who finishes receiving and now wants to send — would otherwise have to
+          know that sharing hides inside a trip. */}
+      <View
+        style={{
+          marginTop: theme.space.lg,
+          paddingTop: theme.space.lg,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.borderSoft,
+          gap: theme.space.sm,
+        }}
+      >
+        <Text style={[theme.type.caption, { color: theme.colors.textMuted }]}>
+          Sending one instead? Open the trip you want to send and tap Share trip.
+        </Text>
+        <Link href="/" asChild>
+          <Button
+            variant="secondary"
+            icon="briefcase-outline"
+            iconEnd="chevron-forward"
+            align="start"
+            fullWidth
+          >
+            Go to my trips
+          </Button>
+        </Link>
+      </View>
     </Screen>
   );
 }

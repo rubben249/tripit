@@ -44,8 +44,13 @@ export default function NowScreen() {
           ) : null}
           {nextTrip ? (
             <Link href={`/trip/${nextTrip.id}`} asChild>
-              <Button size="sm" style={{ alignSelf: 'flex-start' }}>
-                Open trip ›
+              <Button
+                size="sm"
+                variant="secondary"
+                iconEnd="chevron-forward"
+                style={{ alignSelf: 'flex-start' }}
+              >
+                Open trip
               </Button>
             </Link>
           ) : null}

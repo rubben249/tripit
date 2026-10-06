@@ -1,7 +1,8 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { env } from '@/config/env';
 import { supabase } from '@/lib/supabase';
@@ -75,21 +76,15 @@ export function LoginScreen() {
               <Text style={[theme.type.caption, { color: theme.colors.warn }]}>{errorMessage}</Text>
             ) : null}
 
-            <Pressable
+            <Button
+              variant="primary"
+              icon="mail-outline"
+              fullWidth
+              loading={status === 'sending'}
               onPress={sendMagicLink}
-              disabled={status === 'sending'}
-              style={{
-                backgroundColor: theme.colors.ink,
-                borderRadius: theme.radius.sm,
-                paddingVertical: theme.space.sm,
-                alignItems: 'center',
-                opacity: status === 'sending' ? 0.6 : 1,
-              }}
             >
-              <Text style={[theme.type.title, { color: theme.colors.onInk }]}>
-                {status === 'sending' ? 'Sending…' : 'Send sign-in link'}
-              </Text>
-            </Pressable>
+              {status === 'sending' ? 'Sending…' : 'Send sign-in link'}
+            </Button>
           </>
         )}
       </View>

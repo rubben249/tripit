@@ -8,6 +8,9 @@ import {
   mapPalettes,
   space,
   radius,
+  elevation,
+  motion,
+  layout,
   type,
   fontFamily,
   type ColorScheme,
@@ -21,6 +24,9 @@ interface Theme {
   map: MapColors;
   space: typeof space;
   radius: typeof radius;
+  elevation: typeof elevation;
+  motion: typeof motion;
+  layout: typeof layout;
   type: typeof type;
   fontFamily: typeof fontFamily;
 }
@@ -40,6 +46,9 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       map: mapPalettes[scheme],
       space,
       radius,
+      elevation,
+      motion,
+      layout,
       type,
       fontFamily,
     }),

@@ -58,15 +58,17 @@ export function TravelStatsCard() {
         padding: theme.space.lg,
         borderRadius: theme.radius.lg,
         backgroundColor: theme.colors.ink,
+        borderWidth: 1,
+        borderColor: theme.scheme === 'dark' ? theme.colors.border : theme.colors.ink,
       }}
     >
-      <Text style={[theme.type.data, { fontSize: 12, color: theme.colors.mist }]}>
-        TRAVEL PASSPORT
-      </Text>
+      <Text style={[theme.type.label, { color: theme.colors.mist }]}>TRAVEL PASSPORT</Text>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.lg }}>
+      {/* Equal, flexible cells: the figures used to wrap 3 + 1, which read as a
+          broken row rather than as a grid. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: theme.space.md }}>
         {figures.map((f) => (
-          <View key={f.label} style={{ minWidth: 72 }}>
+          <View key={f.label} style={{ flexGrow: 1, flexBasis: '20%', minWidth: 116 }}>
             <Text style={[theme.type.display, { color: theme.colors.onInk }]}>{f.value}</Text>
             <Text style={[theme.type.caption, { color: theme.colors.mist }]}>{f.label}</Text>
           </View>
@@ -76,9 +78,22 @@ export function TravelStatsCard() {
       {stats.countries.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
           {stats.countries.map((code) => (
-            <Text key={code} style={[theme.type.body, { color: theme.colors.onInk }]}>
-              {countryFlag(code)} {countryName(code)}
-            </Text>
+            <View
+              key={code}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.space.xs,
+                paddingHorizontal: theme.space.sm,
+                paddingVertical: 4,
+                borderRadius: theme.radius.pill,
+                backgroundColor: 'rgba(201,174,140,0.14)',
+              }}
+            >
+              <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.onInk }]}>
+                {countryFlag(code)} {countryName(code)}
+              </Text>
+            </View>
           ))}
         </View>
       ) : null}

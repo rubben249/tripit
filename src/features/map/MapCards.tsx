@@ -187,7 +187,7 @@ export function CountryCard({
   const theme = useTheme();
   return (
     <CardShell onClose={onClose}>
-      <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
+      <Text style={[theme.type.section, { color: theme.colors.text }]}>
         {countryFlag(iso)} {countryName(iso)}
       </Text>
       <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: theme.space.sm }}>
@@ -219,7 +219,7 @@ export function CityCard({
   const theme = useTheme();
   return (
     <CardShell onClose={onClose}>
-      <Text style={[theme.type.title, { fontSize: 19, color: theme.colors.text }]}>
+      <Text style={[theme.type.section, { color: theme.colors.text }]}>
         {city.countryCode ? `${countryFlag(city.countryCode)}  ` : ''}
         {city.name}
       </Text>
@@ -288,7 +288,9 @@ export function PlaceCard({
         </Button>
         {place.booking.dayId ? (
           <Link href={`/trip/${tripId}/day/${place.booking.dayId}`} asChild>
-            <Button size="sm">Open day ›</Button>
+            <Button size="sm" variant="secondary" iconEnd="chevron-forward">
+              Open day
+            </Button>
           </Link>
         ) : null}
       </View>

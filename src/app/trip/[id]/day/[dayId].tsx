@@ -32,8 +32,8 @@ export default function DayDetailScreen() {
     <Screen scroll>
       <Stack.Screen options={{ title: `Day ${day.dayIndex + 1}` }} />
       <Link href={`/trip/${id}/itinerary`} asChild>
-        <Button variant="secondary" size="sm" style={{ alignSelf: 'flex-start' }}>
-          ‹ All days
+        <Button variant="ghost" size="sm" icon="chevron-back" style={{ alignSelf: 'flex-start' }}>
+          All days
         </Button>
       </Link>
 
@@ -69,8 +69,8 @@ export default function DayDetailScreen() {
           onDone={() => setAdding(false)}
         />
       ) : (
-        <Button variant="dashed" onPress={() => setAdding(true)}>
-          + Add to this day
+        <Button variant="dashed" icon="add" fullWidth onPress={() => setAdding(true)}>
+          Add to this day
         </Button>
       )}
     </Screen>

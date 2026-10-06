@@ -17,6 +17,8 @@ import {
   CARRIER_LABEL,
   isTransportCategory,
 } from '@/features/bookings/details';
+import { tripDateBounds } from '@/features/trips/dateBounds';
+import { useTrip } from '@/features/trips/hooks';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -45,6 +47,9 @@ export function BookingForm({
   onDone: () => void;
 }) {
   const theme = useTheme();
+  const { data: trip } = useTrip(tripId);
+  // A booking belongs to a trip, so its dates can only fall inside it.
+  const bounds = tripDateBounds(trip);
   const createBooking = useCreateBooking(tripId);
   const updateBooking = useUpdateBooking(tripId);
   const deleteBooking = useDeleteBooking(tripId);
@@ -151,6 +156,8 @@ export function BookingForm({
         gap: theme.space.md,
         padding: theme.space.md,
         borderRadius: theme.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.borderSoft,
         backgroundColor: theme.colors.surfaceAlt,
       }}
     >
@@ -240,7 +247,9 @@ export function BookingForm({
                 label="Arrival date"
                 value={arrivalDate}
                 onChange={setArrivalDate}
-                minDate={time.trim() ? date : undefined}
+                minDate={date}
+                maxDate={bounds.end}
+                rangeHint={bounds.hint}
                 name="booking-arr-date"
               />
             </View>
@@ -275,7 +284,13 @@ export function BookingForm({
               <DateField
                 label="Check-in"
                 value={checkIn}
-                onChange={setCheckIn}
+                onChange={(d) => {
+                  setCheckIn(d);
+                  if (d && checkOut && d > checkOut) setCheckOut(d);
+                }}
+                minDate={bounds.start}
+                maxDate={bounds.end}
+                rangeHint={bounds.hint}
                 name="booking-checkin"
               />
             </View>
@@ -284,7 +299,9 @@ export function BookingForm({
                 label="Check-out"
                 value={checkOut}
                 onChange={setCheckOut}
-                minDate={checkIn}
+                minDate={checkIn ?? bounds.start}
+                maxDate={bounds.end}
+                rangeHint={bounds.hint}
                 name="booking-checkout"
               />
             </View>
@@ -348,18 +365,26 @@ export function BookingForm({
         <Button
           variant="primary"
           size="sm"
+          icon="checkmark"
+          loading={isSaving}
           fullWidth
           onPress={onSave}
-          disabled={!title.trim() || isSaving}
+          disabled={!title.trim()}
         >
           {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Add to this day'}
         </Button>
         {isEditing ? (
-          <Button variant="danger" size="sm" onPress={onDelete}>
-            Delete
+          <Button
+            variant="danger"
+            size="sm"
+            icon="trash-outline"
+            accessibilityLabel="Delete booking"
+            onPress={onDelete}
+          >
+            {''}
           </Button>
         ) : null}
-        <Button variant="secondary" size="sm" onPress={onDone}>
+        <Button variant="ghost" size="sm" onPress={onDone}>
           Cancel
         </Button>
       </View>
@@ -387,8 +412,9 @@ function StatusChip({
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
+        minHeight: 34,
+        justifyContent: 'center',
         paddingHorizontal: theme.space.md,
-        paddingVertical: theme.space.xs,
         borderRadius: theme.radius.pill,
         backgroundColor: active ? theme.colors.steel : 'transparent',
         borderWidth: 1,
@@ -429,8 +455,8 @@ function CategoryChip({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        minHeight: 34,
         paddingHorizontal: theme.space.md,
-        paddingVertical: theme.space.xs,
         borderRadius: theme.radius.pill,
         backgroundColor: active ? category.color : 'transparent',
         borderWidth: 1,

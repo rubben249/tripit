@@ -1,4 +1,5 @@
-import { forwardRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { forwardRef, type ComponentProps } from 'react';
 import { Pressable, Text, View, type PressableProps } from 'react-native';
 import { Link } from 'expo-router';
 
@@ -28,47 +29,73 @@ export default function YouScreen() {
 
       <BackupSection />
 
-      <Link href="/receive" asChild>
-        <SettingsRow label="Receive a shared trip" />
-      </Link>
+      <View style={{ gap: theme.space.sm }}>
+        <Link href="/receive" asChild>
+          <SettingsRow
+            icon="qr-code-outline"
+            label="Receive a shared trip"
+            hint="Also on the + button"
+          />
+        </Link>
 
-      <Link href="/trash" asChild>
-        <SettingsRow label="Trash" value={trashedTrips?.length ?? 0} />
-      </Link>
+        <Link href="/trash" asChild>
+          <SettingsRow icon="trash-outline" label="Trash" value={trashedTrips?.length ?? 0} />
+        </Link>
+      </View>
 
-      <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>{env.appName}</Text>
+      <Text style={[theme.type.label, { color: theme.colors.textFaint, textAlign: 'center' }]}>
+        {env.appName.toUpperCase()}
+      </Text>
     </Screen>
   );
 }
 
 const SettingsRow = forwardRef<
   View,
-  Omit<PressableProps, 'style'> & { label: string; value?: number }
->(function SettingsRow({ label, value, ...pressableProps }, ref) {
+  Omit<PressableProps, 'style'> & {
+    label: string;
+    hint?: string;
+    value?: number;
+    icon: ComponentProps<typeof Ionicons>['name'];
+  }
+>(function SettingsRow({ label, hint, value, icon, ...pressableProps }, ref) {
   const theme = useTheme();
   const { hovered, onHoverIn, onHoverOut } = useHoverable();
 
   return (
     <Pressable
       ref={ref}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       {...pressableProps}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       style={({ pressed }) => ({
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.space.md,
+        minHeight: 56,
         paddingHorizontal: theme.space.md,
-        paddingVertical: theme.space.sm,
         borderRadius: theme.radius.sm,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
-        opacity: pressed ? 0.75 : hovered ? 0.88 : 1,
+        backgroundColor: hovered ? theme.colors.surfaceAlt : theme.colors.surface,
+        opacity: pressed ? 0.8 : 1,
       })}
     >
-      <Text style={[theme.type.body, { color: theme.colors.text }]}>{label}</Text>
-      <Text style={[theme.type.data, { color: theme.colors.textMuted }]}>{value ?? '›'}</Text>
+      <Ionicons name={icon} size={20} color={theme.colors.accent} />
+      <View style={{ flex: 1 }}>
+        <Text style={[theme.type.body, { color: theme.colors.text }]}>{label}</Text>
+        {hint ? (
+          <Text style={[theme.type.caption, { color: theme.colors.textFaint }]}>{hint}</Text>
+        ) : null}
+      </View>
+      {value != null ? (
+        <Text style={[theme.type.data, { fontSize: 13, color: theme.colors.textMuted }]}>
+          {value}
+        </Text>
+      ) : null}
+      <Ionicons name="chevron-forward" size={16} color={theme.colors.textFaint} />
     </Pressable>
   );
 });

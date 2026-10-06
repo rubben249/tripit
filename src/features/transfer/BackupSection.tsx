@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { SectionTitle } from '@/components/SectionTitle';
 import { downloadJson, filesSupported, pickJsonFile } from '@/lib/files';
 import { plural } from '@/lib/plural';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -61,17 +62,26 @@ export function BackupSection() {
 
   return (
     <View style={{ gap: theme.space.sm }}>
-      <Text style={[theme.type.title, { fontSize: 20, color: theme.colors.text }]}>Backup</Text>
-      <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-        Your trips live only on this device. Save a backup file now and then, and restore it on a
-        new phone or browser.
-      </Text>
+      <SectionTitle hint="Your trips live only on this device. Save a backup file now and then, and restore it on a new phone or browser.">
+        Backup
+      </SectionTitle>
       {filesSupported ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
-          <Button variant="primary" onPress={onExport}>
+          <Button
+            variant="primary"
+            icon="download-outline"
+            style={{ flexGrow: 1 }}
+            onPress={onExport}
+          >
             Download backup
           </Button>
-          <Button onPress={onImport} disabled={busy}>
+          <Button
+            variant="secondary"
+            icon="refresh-outline"
+            loading={busy}
+            style={{ flexGrow: 1 }}
+            onPress={onImport}
+          >
             Restore from file
           </Button>
         </View>
