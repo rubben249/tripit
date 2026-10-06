@@ -18,6 +18,7 @@ export type CategoryKey =
   | 'train'
   | 'bus'
   | 'local_transport'
+  | 'walking'
   | 'car_rental'
   | 'boat_ferry'
   | 'accommodation'
@@ -36,6 +37,13 @@ export interface BookingCategory {
   color: string;
   /** Whether this category spans a date range (e.g. hotel nights) rather than a single point in time. */
   isRange: boolean;
+  /**
+   * Whether this is something you hold a reservation for — a ticket, a seat, a
+   * room, a table. The Reservations tab is that list and nothing else: a museum,
+   * a train and a hotel belong there; a walk through the Jordaan or a stop to
+   * take photos does not, however firmly it sits in the plan.
+   */
+  bookable: boolean;
 }
 
 export const bookingCategories: Record<CategoryKey, BookingCategory> = {
@@ -45,21 +53,39 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'airplane-outline',
     color: '#8A5A34',
     isRange: false,
+    bookable: true,
   },
-  train: { key: 'train', label: 'Train', icon: 'train-outline', color: '#4A3222', isRange: false },
+  train: {
+    key: 'train',
+    label: 'Train',
+    icon: 'train-outline',
+    color: '#4A3222',
+    isRange: false,
+    bookable: true,
+  },
   bus: {
     key: 'bus',
     label: 'Bus / transfer',
     icon: 'bus-outline',
     color: '#A9825A',
     isRange: false,
+    bookable: true,
   },
   local_transport: {
     key: 'local_transport',
-    label: 'Local transport',
+    label: 'Tram / metro / bus',
     icon: 'swap-horizontal-outline',
     color: '#C2A47D',
     isRange: false,
+    bookable: true,
+  },
+  walking: {
+    key: 'walking',
+    label: 'On foot',
+    icon: 'walk-outline',
+    color: '#9C8B76',
+    isRange: false,
+    bookable: false,
   },
   car_rental: {
     key: 'car_rental',
@@ -67,6 +93,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'car-outline',
     color: '#6B4A33',
     isRange: true,
+    bookable: true,
   },
   boat_ferry: {
     key: 'boat_ferry',
@@ -74,6 +101,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'boat-outline',
     color: '#5E7A6B',
     isRange: false,
+    bookable: true,
   },
   accommodation: {
     key: 'accommodation',
@@ -81,6 +109,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'bed-outline',
     color: '#A8763E',
     isRange: true,
+    bookable: true,
   },
   restaurant: {
     key: 'restaurant',
@@ -88,6 +117,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'restaurant-outline',
     color: '#8C6F4E',
     isRange: false,
+    bookable: true,
   },
   ticket_activity: {
     key: 'ticket_activity',
@@ -95,6 +125,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'ticket-outline',
     color: '#7A5C42',
     isRange: false,
+    bookable: true,
   },
   sightseeing: {
     key: 'sightseeing',
@@ -102,6 +133,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'camera-outline',
     color: '#C9AE8C',
     isRange: false,
+    bookable: false,
   },
   shopping: {
     key: 'shopping',
@@ -109,6 +141,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'bag-outline',
     color: '#B08D5B',
     isRange: false,
+    bookable: false,
   },
   leisure: {
     key: 'leisure',
@@ -116,6 +149,7 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'happy-outline',
     color: '#6E7B4F',
     isRange: false,
+    bookable: false,
   },
   note: {
     key: 'note',
@@ -123,8 +157,16 @@ export const bookingCategories: Record<CategoryKey, BookingCategory> = {
     icon: 'document-text-outline',
     color: '#9C8B76',
     isRange: false,
+    bookable: false,
   },
-  task: { key: 'task', label: 'Task', icon: 'checkbox-outline', color: '#5B4A3A', isRange: false },
+  task: {
+    key: 'task',
+    label: 'Task',
+    icon: 'checkbox-outline',
+    color: '#5B4A3A',
+    isRange: false,
+    bookable: false,
+  },
 };
 
 export const categoryKeys = Object.keys(bookingCategories) as CategoryKey[];
@@ -133,8 +175,16 @@ export const categoryKeys = Object.keys(bookingCategories) as CategoryKey[];
  * show up as a reservation or as a category to pick in the booking form. */
 export const reservationCategoryKeys = categoryKeys.filter(isReservationCategory);
 
+/** The categories the Reservations tab groups by, in the order it shows them. */
+export const bookableCategoryKeys = categoryKeys.filter(isBookableCategory);
+
 export function isReservationCategory(key: CategoryKey): boolean {
   return key !== 'note' && key !== 'task';
+}
+
+/** Something you reserve or pay for ahead of time — see `BookingCategory.bookable`. */
+export function isBookableCategory(key: CategoryKey): boolean {
+  return bookingCategories[key]?.bookable ?? false;
 }
 
 export function getCategory(key: string): BookingCategory {

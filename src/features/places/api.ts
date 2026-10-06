@@ -51,7 +51,7 @@ function lookups(booking: Booking, cityName: string | undefined): string[] {
     .map(withCity);
 }
 
-/** Looks up booked places whose place text changed since their last lookup (or never had one).
+/** Looks up places whose place text changed since their last lookup (or never had one).
  * The result — found or not — is stored with the key it answered, so the same place is never
  * looked up twice. Places not found keep no coordinates and show at their city instead. */
 export async function geocodePendingPlaces(): Promise<number> {

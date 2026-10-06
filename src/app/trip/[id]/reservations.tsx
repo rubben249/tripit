@@ -2,9 +2,10 @@ import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '@/components/Screen';
-import { bookingCategories, reservationCategoryKeys } from '@/features/bookings/categories';
+import { bookableCategoryKeys, bookingCategories } from '@/features/bookings/categories';
 import { BookingCard } from '@/features/itinerary/BookingCard';
 import { useBookings } from '@/features/itinerary/hooks';
+import { isReservation } from '@/features/places/places';
 import { useTripPlaces } from '@/features/places/hooks';
 import { useTrip } from '@/features/trips/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -25,17 +26,20 @@ export default function ReservationsScreen() {
     return (
       <Screen>
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-          Nothing booked yet — add flights, hotels, tickets and more from the Itinerary tab.
+          Nothing booked yet — flights, hotels, tickets and transport show up here once they are in
+          the plan. Add them from the Itinerary tab.
         </Text>
       </Screen>
     );
   }
 
-  const groups = reservationCategoryKeys
+  // A walk or a photo stop is part of the plan but is not a reservation, and an
+  // idea is not one yet — both used to sit here, burying the ones that are.
+  const groups = bookableCategoryKeys
     .map((key) => ({
       category: bookingCategories[key],
       bookings: bookings
-        .filter((b) => b.categoryKey === key)
+        .filter((b) => b.categoryKey === key && isReservation(b))
         .sort((a, b) => (a.startAt ?? '').localeCompare(b.startAt ?? '')),
     }))
     .filter((group) => group.bookings.length > 0);
@@ -44,7 +48,8 @@ export default function ReservationsScreen() {
     return (
       <Screen>
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>
-          Nothing booked yet — add flights, hotels, tickets and more from the Itinerary tab.
+          Nothing booked yet — flights, hotels, tickets and transport show up here once they are in
+          the plan. Add them from the Itinerary tab.
         </Text>
       </Screen>
     );
@@ -54,7 +59,7 @@ export default function ReservationsScreen() {
     <Screen scroll>
       {groups.map(({ category, bookings: categoryBookings }) => (
         <View key={category.key} style={{ gap: theme.space.sm }}>
-          <Text style={[theme.type.headline, { fontSize: 22, color: theme.colors.text }]}>
+          <Text style={[theme.type.section, { color: theme.colors.text }]}>
             {category.label} ({categoryBookings.length})
           </Text>
           {categoryBookings.map((booking) => (

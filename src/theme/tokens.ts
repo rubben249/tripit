@@ -123,7 +123,7 @@ export interface MapColors {
   /** Cities of the trip being looked at (picked by country, chip or city) — terracotta, so they
    * stand apart from both the plain city dots and the country fill. */
   cityFocus: string;
-  /** Numbered booked places: the disc and its number. */
+  /** Numbered places: the disc and its number. */
   place: string;
   placeText: string;
   /** Places marked as seen: a quieter disc with a check instead of the number. */

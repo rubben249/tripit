@@ -105,6 +105,17 @@ const DayRowLink = forwardRef<
             <Text style={[theme.type.label, { color: theme.colors.accent }]}>TODAY</Text>
           ) : null}
         </View>
+        {day.notes ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="document-text-outline" size={16} color={theme.colors.accent} />
+            <Text
+              numberOfLines={1}
+              style={[theme.type.body, { fontSize: 14, flex: 1, color: theme.colors.textMuted }]}
+            >
+              {day.notes}
+            </Text>
+          </View>
+        ) : null}
         {highlights.length === 0 ? (
           <Text style={[theme.type.body, { fontSize: 14, color: theme.colors.textMuted }]}>
             Nothing planned yet

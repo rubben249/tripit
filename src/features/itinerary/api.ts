@@ -146,6 +146,16 @@ export async function listItineraryDays(tripId: string): Promise<ItineraryDay[]>
   return rows.map((row, index) => ({ ...rowToDay(row), dayIndex: index }));
 }
 
+/**
+ * The day's own notes — what the plan says about the day rather than about any one
+ * stop: opening hours to watch, which bus runs late, what to carry. The column has
+ * existed since v1; nothing could write to it until now.
+ */
+export async function setItineraryDayNotes(dayId: string, notes: string | null): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('update itinerary_days set notes = ? where id = ?', notes, dayId);
+}
+
 /** Creates one itinerary_days row per date in range that doesn't already exist, linked to the given city. */
 export async function ensureItineraryDays(
   tripId: string,

@@ -12,7 +12,7 @@ import { TextField } from '@/components/TextField';
 import { formatDateRange, tripDurationNights } from '@/lib/dates';
 import { plural } from '@/lib/plural';
 import { stagger } from '@/lib/motion';
-import { isReservationCategory } from '@/features/bookings/categories';
+import { isReservation } from '@/features/places/places';
 import { useExportTripDocument } from '@/features/export/hooks';
 import { CityPlaceField } from '@/features/itinerary/CityPlaceField';
 import { useAddCity, useBookings, useCities } from '@/features/itinerary/hooks';
@@ -31,9 +31,7 @@ export default function TripOverviewScreen() {
   const { data: trip } = useTrip(id);
   const { data: cities } = useCities(id);
   const { data: bookings } = useBookings(id);
-  const reservationCount = (bookings ?? []).filter((b) =>
-    isReservationCategory(b.categoryKey),
-  ).length;
+  const reservationCount = (bookings ?? []).filter(isReservation).length;
   const exportDoc = useExportTripDocument(id);
   const addCity = useAddCity(id);
   const trashTrip = useTrashTrip();

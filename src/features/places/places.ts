@@ -1,20 +1,47 @@
-import { isReservationCategory, type CategoryKey } from '@/features/bookings/categories';
+import {
+  isBookableCategory,
+  isReservationCategory,
+  type CategoryKey,
+} from '@/features/bookings/categories';
 import { isTransportCategory } from '@/features/bookings/details';
 import type { Booking, City, ItineraryDay } from '@/features/itinerary/types';
 
 /**
- * "Places" are the booked stops of a trip that sit somewhere on the map — the hotel, the
- * restaurant, the museum ticket — numbered 1, 2, 3… in the order they happen. Transport isn't a
- * place (a flight goes from one to another), and ideas or cancelled bookings aren't booked.
+ * "Places" are the stops of a trip that sit somewhere on the map — the hotel, the museum, the
+ * square you walk to — numbered 1, 2, 3… in the order they happen. Transport isn't a place (a
+ * flight goes from one to another, and neither is walking between two of them).
+ *
+ * A place does not have to be booked: half of what you go and see costs nothing and has nothing
+ * to reserve, and leaving those off the map left it emptier than the trip. Only a cancelled stop
+ * drops out, because that one is no longer happening.
  */
 
 /** Categories that happen *at* a place. Getting around isn't one, even inside a city. */
 export function isPlaceCategory(key: CategoryKey): boolean {
-  return isReservationCategory(key) && !isTransportCategory(key) && key !== 'local_transport';
+  return (
+    isReservationCategory(key) &&
+    !isTransportCategory(key) &&
+    key !== 'local_transport' &&
+    key !== 'walking'
+  );
 }
 
 export function isBooked(booking: Booking): boolean {
   return booking.status === 'booked' || booking.status === 'paid';
+}
+
+/**
+ * What the Reservations tab lists. The category decides what *can* be a
+ * reservation — a museum, a seat, a room — and the status decides whether it is
+ * one yet: `idea` is the app's own word for "not committed", so it stays out,
+ * while `to_book` is already a commitment waiting on a payment.
+ */
+export function isReservation(booking: Booking): boolean {
+  return (
+    isBookableCategory(booking.categoryKey) &&
+    booking.status !== 'idea' &&
+    booking.status !== 'cancelled'
+  );
 }
 
 /** The text to look up on the map — the place name and/or address the user typed. */
@@ -26,7 +53,11 @@ export function placeQuery(booking: Booking): string | null {
 }
 
 export function isNumberedPlace(booking: Booking): boolean {
-  return isPlaceCategory(booking.categoryKey) && isBooked(booking) && placeQuery(booking) !== null;
+  return (
+    isPlaceCategory(booking.categoryKey) &&
+    booking.status !== 'cancelled' &&
+    placeQuery(booking) !== null
+  );
 }
 
 /** When a place happens, as a sortable local timestamp. Hotel stays only have a date — check-in
@@ -52,7 +83,7 @@ export interface Place {
   seen: boolean;
 }
 
-/** The trip's booked places in time order, numbered from 1. Places with no coordinates of their
+/** The trip's places in time order, numbered from 1. Places with no coordinates of their
  * own fall back to their city's; places with neither are left off (they can't be drawn). */
 export function buildPlaces(bookings: Booking[], days: ItineraryDay[], cities: City[]): Place[] {
   const dayDate = new Map(days.map((d) => [d.id, d.date]));

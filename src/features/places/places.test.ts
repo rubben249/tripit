@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { makeBooking, makeCity, makeDay } from '@/test/factories';
 
-import { buildPlaces, isNumberedPlace, placeQuery } from './places';
+import { buildPlaces, isNumberedPlace, isReservation, placeQuery } from './places';
 
 const days = [
   makeDay({ id: 'd1', date: '2026-10-09', cityId: 'rome' }),
@@ -14,18 +14,35 @@ const booked = (overrides: Parameters<typeof makeBooking>[0]) =>
   makeBooking({ status: 'booked', locationName: 'Somewhere', ...overrides });
 
 describe('isNumberedPlace', () => {
-  it('counts booked or paid places with a location', () => {
+  it('counts any stop with a location, booked or not', () => {
     expect(isNumberedPlace(booked({ categoryKey: 'restaurant' }))).toBe(true);
     expect(isNumberedPlace(booked({ categoryKey: 'accommodation', status: 'paid' }))).toBe(true);
+    // A free sight is still somewhere you go, and most of them have nothing to book.
+    expect(isNumberedPlace(booked({ categoryKey: 'sightseeing', status: 'idea' }))).toBe(true);
   });
 
-  it('leaves out ideas, cancellations, transport, notes and places without a location', () => {
-    expect(isNumberedPlace(booked({ status: 'idea' }))).toBe(false);
+  it('leaves out cancellations, transport, walking, notes and places without a location', () => {
     expect(isNumberedPlace(booked({ status: 'cancelled' }))).toBe(false);
     expect(isNumberedPlace(booked({ categoryKey: 'flight' }))).toBe(false);
     expect(isNumberedPlace(booked({ categoryKey: 'local_transport' }))).toBe(false);
+    expect(isNumberedPlace(booked({ categoryKey: 'walking' }))).toBe(false);
     expect(isNumberedPlace(booked({ categoryKey: 'note' }))).toBe(false);
     expect(isNumberedPlace(booked({ locationName: null, address: '  ' }))).toBe(false);
+  });
+});
+
+describe('isReservation', () => {
+  it('lists what you hold or still have to book', () => {
+    expect(isReservation(booked({ categoryKey: 'accommodation' }))).toBe(true);
+    expect(isReservation(booked({ categoryKey: 'ticket_activity', status: 'to_book' }))).toBe(true);
+    expect(isReservation(booked({ categoryKey: 'train', status: 'paid' }))).toBe(true);
+  });
+
+  it('leaves out ideas, cancellations and things nobody books', () => {
+    expect(isReservation(booked({ categoryKey: 'ticket_activity', status: 'idea' }))).toBe(false);
+    expect(isReservation(booked({ categoryKey: 'train', status: 'cancelled' }))).toBe(false);
+    expect(isReservation(booked({ categoryKey: 'sightseeing' }))).toBe(false);
+    expect(isReservation(booked({ categoryKey: 'walking' }))).toBe(false);
   });
 });
 

@@ -22,7 +22,7 @@ export interface GlobeMapProps {
   cities: MapCity[];
   /** Trips being looked at: their cities are drawn in the focus color. */
   highlightTripIds: string[];
-  /** Numbered booked places to draw (those of the trips being looked at). */
+  /** Numbered places to draw (those of the trips being looked at). */
   places: MapPlace[];
   /** Legs between the cities of the trips being looked at. */
   routes: Route[];

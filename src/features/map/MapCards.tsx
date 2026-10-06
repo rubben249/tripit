@@ -40,8 +40,8 @@ function CardShell({ children, onClose }: { children: ReactNode; onClose: () => 
 
 function seenSummary(places: Place[]): string {
   const seen = places.filter((p) => p.seen).length;
-  if (places.length === 0) return 'No booked places yet';
-  return `${places.length} booked place${places.length === 1 ? '' : 's'} · ${seen} seen`;
+  if (places.length === 0) return 'No places on the map yet';
+  return `${places.length} place${places.length === 1 ? '' : 's'} · ${seen} seen`;
 }
 
 /** Numbered places in time order. The badge marks a place as seen; the row flies to it. */

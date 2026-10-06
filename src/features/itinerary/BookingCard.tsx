@@ -7,6 +7,7 @@ import { asTransportDetails, isTransportCategory } from '@/features/bookings/det
 import { useSetSeen } from '@/features/places/hooks';
 import { PlaceBadge } from '@/features/places/PlaceBadge';
 import { useHoverable } from '@/lib/useHoverable';
+import { formatMoney } from '@/lib/currency';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { BookingForm } from './BookingForm';
@@ -27,7 +28,7 @@ export function BookingCard({
   booking: Booking;
   tripId: string;
   defaultCurrency: string;
-  /** Its number among the trip's booked places (as on the map), if it is one. */
+  /** Its number among the trip's places (as on the map), if it is one. */
   placeNumber?: number;
 }) {
   const theme = useTheme();
@@ -89,9 +90,8 @@ export function BookingCard({
             {booking.title}
           </Text>
           {booking.price != null ? (
-            <Text style={[theme.type.title, { fontSize: 16, color: theme.colors.textMuted }]}>
-              {booking.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
-              {booking.currency ?? defaultCurrency}
+            <Text style={[theme.type.data, { fontSize: 14, color: theme.colors.textMuted }]}>
+              {formatMoney(booking.price, booking.currency ?? defaultCurrency)}
             </Text>
           ) : null}
         </View>

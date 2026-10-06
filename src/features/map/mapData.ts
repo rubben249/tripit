@@ -107,7 +107,7 @@ export function buildMapData(trips: Trip[], cities: City[], now: Date = new Date
   };
 }
 
-/** A numbered booked place as drawn on the globe. */
+/** A numbered place as drawn on the globe. */
 export interface MapPlace {
   id: string;
   tripId: string;

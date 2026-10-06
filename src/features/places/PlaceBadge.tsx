@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** A booked place's number — or, once marked as seen, a quiet check. Same look as the place's
+/** A place's number — or, once marked as seen, a quiet check. Same look as the place's
  * marker on the map, so the two read as one thing. Pass `onToggle` to make it the seen switch. */
 export function PlaceBadge({
   number,

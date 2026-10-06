@@ -7,6 +7,7 @@ import { Screen } from '@/components/Screen';
 import { formatDayLabel } from '@/lib/dates';
 import { BookingCard } from '@/features/itinerary/BookingCard';
 import { BookingForm } from '@/features/itinerary/BookingForm';
+import { DayNotes } from '@/features/itinerary/DayNotes';
 import { getDayBookings } from '@/features/itinerary/daySummary';
 import { useBookings, useItineraryDays } from '@/features/itinerary/hooks';
 import { useTripPlaces } from '@/features/places/hooks';
@@ -40,6 +41,8 @@ export default function DayDetailScreen() {
       <Text style={[theme.type.headline, { color: theme.colors.text }]}>
         Day {day.dayIndex + 1} · {formatDayLabel(day.date)}
       </Text>
+
+      <DayNotes tripId={id} day={day} />
 
       {dayBookings.length === 0 ? (
         <Text style={[theme.type.body, { color: theme.colors.textMuted }]}>

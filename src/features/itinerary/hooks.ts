@@ -8,6 +8,7 @@ import {
   listCities,
   listGeneralNotes,
   listItineraryDays,
+  setItineraryDayNotes,
   updateBooking,
   type BookingUpdate,
 } from './api';
@@ -45,6 +46,17 @@ export function useItineraryDays(tripId: string) {
     queryKey: daysKey(tripId),
     queryFn: () => listItineraryDays(tripId),
     enabled: !!tripId,
+  });
+}
+
+export function useSetDayNotes(tripId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ dayId, notes }: { dayId: string; notes: string | null }) =>
+      setItineraryDayNotes(dayId, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: daysKey(tripId) });
+    },
   });
 }
 
