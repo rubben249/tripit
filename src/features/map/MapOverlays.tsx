@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { useHoverable } from '@/lib/useHoverable';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -102,6 +102,46 @@ export function TripChip({
         <Ionicons name="globe-outline" size={15} color={theme.colors.text} />
       )}
       <Text style={[theme.type.body, { fontSize: 15, color: theme.colors.text }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** Reloads the map's data on demand — e.g. after adding a trip on another tab. */
+export function RefreshButton({
+  refreshing,
+  onPress,
+}: {
+  refreshing: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const floating = useFloatingStyle();
+  const { hovered, onHoverIn, onHoverOut } = useHoverable();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={refreshing}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      accessibilityRole="button"
+      accessibilityLabel="Refresh map"
+      style={({ pressed }) => [
+        floating,
+        {
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.75 : hovered ? 0.9 : 1,
+        },
+      ]}
+    >
+      {refreshing ? (
+        <ActivityIndicator color={theme.colors.accent} />
+      ) : (
+        <Ionicons name="refresh" size={22} color={theme.colors.text} />
+      )}
     </Pressable>
   );
 }

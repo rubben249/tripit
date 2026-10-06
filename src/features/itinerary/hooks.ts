@@ -14,6 +14,8 @@ import {
 import type { NewBookingInput, NewCityInput } from './types';
 
 const citiesKey = (tripId: string) => ['trips', tripId, 'cities'] as const;
+/** Every trip's cities at once — what the world map draws. */
+export const allCitiesKey = ['cities', 'all'] as const;
 const daysKey = (tripId: string) => ['trips', tripId, 'days'] as const;
 const bookingsKey = (tripId: string) => ['trips', tripId, 'bookings'] as const;
 const generalNotesKey = ['notes', 'general'] as const;
@@ -25,6 +27,7 @@ function invalidateBookings(queryClient: ReturnType<typeof useQueryClient>, trip
 
 function invalidateTripItinerary(queryClient: ReturnType<typeof useQueryClient>, tripId: string) {
   queryClient.invalidateQueries({ queryKey: citiesKey(tripId) });
+  queryClient.invalidateQueries({ queryKey: allCitiesKey });
   queryClient.invalidateQueries({ queryKey: daysKey(tripId) });
   queryClient.invalidateQueries({ queryKey: bookingsKey(tripId) });
 }

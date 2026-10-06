@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlobeMap } from '@/features/map/GlobeMap';
 import type { FocusRequest } from '@/features/map/GlobeMap.types';
 import { CityCard, CountryCard, PlaceCard, TripCard } from '@/features/map/MapCards';
-import { Legend, TripChip } from '@/features/map/MapOverlays';
-import { useAllCities, useMapBackfill } from '@/features/map/hooks';
+import { Legend, RefreshButton, TripChip } from '@/features/map/MapOverlays';
+import { useAllCities, useMapBackfill, useRefreshMap } from '@/features/map/hooks';
 import {
   boundsOf,
   buildMapData,
@@ -35,6 +35,7 @@ export default function MapScreen() {
   const { data: cities } = useAllCities();
   const { data: tripData } = useMapTripData();
   useMapBackfill();
+  const { refresh, refreshing } = useRefreshMap();
 
   const data = useMemo(() => buildMapData(trips ?? [], cities ?? []), [trips, cities]);
 
@@ -213,7 +214,12 @@ export default function MapScreen() {
           gap: theme.space.xs,
         }}
       >
-        <Text style={[theme.type.headline, { color: theme.colors.text }]}>Map</Text>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <Text style={[theme.type.headline, { color: theme.colors.text }]}>Map</Text>
+          <RefreshButton refreshing={refreshing} onPress={refresh} />
+        </View>
         {data.countries.length > 0 ? (
           <Legend />
         ) : (
