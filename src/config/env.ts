@@ -3,8 +3,11 @@
  * Nothing in the app reads `process.env` directly outside this file —
  * see CLAUDE.md "Arquitectura modular y configuración centralizada".
  */
+import brand from './brand.json';
+
 export const env = {
-  appName: process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt',
+  appName: process.env.EXPO_PUBLIC_APP_NAME ?? brand.name,
+  appDescription: process.env.EXPO_PUBLIC_APP_DESCRIPTION ?? brand.description,
   defaultCurrency: process.env.EXPO_PUBLIC_DEFAULT_CURRENCY ?? 'EUR',
   // Path the web app is served under ("" at a domain root, "/<repo>" on a Pages project site) — inlined at build
   // time by babel-preset-expo from `experiments.baseUrl` in app.config.ts.

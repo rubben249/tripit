@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { TextField } from '@/components/TextField';
 import { useHoverable } from '@/lib/useHoverable';
+import { sanitizeImage } from '@/lib/images';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { useAddNotePhoto, useDeleteNotePhoto, useNotePhotos, useRenameNotePhoto } from './hooks';
@@ -36,7 +37,15 @@ export function NotePhotos({ noteId }: { noteId: string }) {
     });
     const asset = result.canceled ? null : result.assets[0];
     if (!asset?.base64) return;
-    setPicked(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
+    const raw = `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`;
+    // Strips the EXIF block — a phone photo carries the GPS coordinates and the
+    // time it was taken, and photos travel with a shared trip.
+    try {
+      setPicked(await sanitizeImage(raw));
+    } catch {
+      setPickError('That image could not be read. Try a different one.');
+      return;
+    }
     setPendingName('');
   };
 

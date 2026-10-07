@@ -5,6 +5,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
+import { env } from '@/config/env';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { MapColors } from '@/theme/tokens';
 
@@ -13,9 +14,12 @@ import { mainlandBounds, type MapCity, type MapCountry, type MapPlace } from './
 import { routeColorKey, type Route, type RouteStyle } from './routes';
 
 /**
- * The world globe, on MapLibre GL JS v5 with free OpenFreeMap tiles (no key, no card).
- * Pinned to v5 on purpose: v6 ships ESM-only and loads its web worker from a separate URL, which
- * Metro doesn't bundle; v5 inlines the worker, so it just works in the Expo web build.
+ * The world globe, on MapLibre GL JS v6 with free OpenFreeMap tiles (no key, no card).
+ *
+ * This was pinned to v5 precisely because v6 ships ESM-only and resolves its web worker from a
+ * separate URL that Metro can't bundle. v5 had to be left behind anyway: every release up to and
+ * including 6.4.0 carries a critical XSS sanitizer bypass (GHSA-jrc7-96c5-q579) with no fix on the
+ * 5.x line. The worker is handled by serving it ourselves and calling `setWorkerUrl` below.
  *
  * MapLibre and the country shapes are imported lazily, so they're only downloaded when the Map
  * tab is opened — not on every app start.
@@ -354,11 +358,17 @@ export function GlobeMap({
           import('maplibre-gl'),
           import('./countries.json'),
         ]);
-        // v5 is a CommonJS/UMD build: depending on interop it arrives as the namespace itself or
-        // wrapped in `default`.
+        // v6 is an ESM-only distribution, but Metro's interop can still hand the namespace back
+        // wrapped in `default` depending on how the dynamic import is transformed — accept both.
         const maplibre = ((mod as { default?: MapLibreModule }).default ?? mod) as MapLibreModule;
         if (cancelled || !containerRef.current) return;
         countriesRef.current = (shapes.default ?? shapes) as unknown as FeatureCollection;
+
+        // v6 resolves its worker from `import.meta.url`, which Metro cannot
+        // provide — left alone, every map fails with "Worker failed to load".
+        // scripts/sync-maplibre-worker.mjs copies the worker into public/ under
+        // this exact name on postinstall.
+        maplibre.setWorkerUrl(`${env.webBaseUrl}/maplibre-gl-worker-${maplibre.getVersion()}.mjs`);
 
         map = new maplibre.Map({
           container: containerRef.current,
@@ -388,10 +398,11 @@ export function GlobeMap({
         });
 
         // The dark base style references POI icons its sprite doesn't include; a blank stand-in
-        // keeps MapLibre from warning about each one.
-        map.on('styleimagemissing', (e) => {
-          if (map && !map.hasImage(e.id)) {
-            map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
+        // keeps MapLibre from warning about each one. In v6 the `styleimagemissing` event became
+        // notify-only, so supplying the image has to go through this resolver instead.
+        map.setMissingStyleImageResolver((id) => {
+          if (map && !map.hasImage(id)) {
+            map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
           }
         });
 

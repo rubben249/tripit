@@ -1,6 +1,8 @@
 import type { ExpoConfig } from 'expo/config';
 
-const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
+import brand from './src/config/brand.json';
+
+const appName = process.env.EXPO_PUBLIC_APP_NAME ?? brand.name;
 
 // Set EXPO_WEB_BASE_PATH only when the web app is served under a sub-path
 // (e.g. a GitHub Pages *project* site, /<repo>/) — Expo Router then prefixes
@@ -9,8 +11,11 @@ const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'TripIt';
 // from "/".
 const webBasePath = process.env.EXPO_WEB_BASE_PATH ?? '';
 
-const paperLight = '#F7F1E6';
-const inkDark = '#17110B';
+// src/config/brand.json is the one place these two live: the native splash and
+// adaptive icon here, the browser/PWA chrome in scripts/postexport-web.mjs, and
+// the light/dark app background in src/theme/tokens.ts all read it.
+const paperLight = brand.backgroundLight;
+const inkDark = brand.backgroundDark;
 
 const config: ExpoConfig = {
   name: appName,

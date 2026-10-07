@@ -49,6 +49,9 @@ yarn-error.*
 # Supabase local
 supabase/.temp/
 
+# Copied out of node_modules by scripts/sync-maplibre-worker.mjs on postinstall
+public/maplibre-gl-worker-*.mjs
+
 # Local-only toolchain (e.g. pinned Node runtime), never committed
 .tools/
 

@@ -5,13 +5,21 @@
  * docs/PLAN.md and CLAUDE.md "Arquitectura modular y configuración
  * centralizada": no component should hardcode a color, font family, size or
  * spacing value outside this file.
+ *
+ * Two values are the exception and live in src/config/brand.json instead: the
+ * light and dark page backgrounds. They are needed outside TypeScript too — by
+ * app.config.ts for the native splash/adaptive icon and by
+ * scripts/postexport-web.mjs for the PWA manifest and browser theme-color — so
+ * a JSON file is the only form all three can share. Repaint them there.
  */
+
+import shell from '@/config/brand.json';
 
 export const brand = {
   ink: '#2B1E12',
   steel: '#6B4A33',
   mist: '#C9AE8C',
-  paper: '#F7F1E6',
+  paper: shell.backgroundLight,
   stone: '#D9C6A8',
   accent: '#A8763E',
   good: '#6E7B4F',
@@ -77,7 +85,7 @@ const light: ThemeColors = {
 };
 
 const dark: ThemeColors = {
-  background: '#17110B',
+  background: shell.backgroundDark,
   surface: '#241B12',
   surfaceAlt: '#1D160F',
   text: '#EFE6D8',

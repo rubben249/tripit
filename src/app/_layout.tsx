@@ -15,6 +15,7 @@ import 'react-native-reanimated';
 
 import { ProgressBar } from '@/components/ProgressBar';
 import { isDatabaseBusyError } from '@/lib/db/errors';
+import { registerServiceWorker } from '@/lib/pwa';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { purgeExpiredTrash } from '@/features/trips/api';
 import { env } from '@/config/env';
@@ -54,6 +55,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     purgeExpiredTrash().catch((err: unknown) => console.warn('Failed to purge trash', err));
+  }, []);
+
+  // Web/PWA only (no-op elsewhere): the worker that lets a new deploy reach a
+  // home-screen icon without deleting and re-adding it. See src/lib/pwa.web.ts.
+  useEffect(() => {
+    registerServiceWorker();
   }, []);
 
   if (!loaded) {

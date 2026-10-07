@@ -91,14 +91,11 @@ create trigger on_auth_user_created
 -- not just an RLS policy. Registered in supabase/config.toml under
 -- [auth.hook.before_user_created].
 --
--- ⚠️ Verify against a real project before relying on this: the before-user-
--- created hook contract is a newer part of the Supabase Auth Hooks API and
--- this return shape (an "error" key with http_code/message) matches the
--- documented pattern at the time this was written, but hasn't been
--- exercised against a live project yet (no Supabase account/Docker
--- available while writing this). Test explicitly: try signing up with an
--- email NOT in allowed_emails and confirm it's rejected, before trusting
--- this gate in production.
+-- Verified against the real project: requesting an OTP for an email that is not
+-- in allowed_emails returns 403 "This app is invite-only...". Note the hook has
+-- to be registered by hand in the dashboard (Authentication -> Hooks) — it is
+-- platform config, not something SQL or the CLI can deploy, so a restored or
+-- re-created project needs that step repeated or the gate is silently open.
 create function public.check_allowed_email(event jsonb)
 returns jsonb
 language plpgsql

@@ -1,0 +1,156 @@
+# Netlify configuration for the web/PWA deploy.
+#
+# Three jobs: build the SPA, make a deploy actually reach installed home-screen
+# icons (the Cache-Control blocks), and lock the document down (the header
+# blocks).
+
+[build]
+  publish = "dist"
+  command = "npm run build:web"
+
+[build.environment]
+  NODE_VERSION = "22.13.0"
+  # Keep Netlify's build image from pulling in dev-only native toolchains.
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# web.output is 'single': there is one index.html and routing happens in the
+# browser, so every unmatched path must serve the shell (200, not a redirect —
+# the URL has to survive for the router to read it).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    # 2 years + preload: this app is HTTPS-only (WebCrypto, used by sharing,
+    # requires a secure context anyway).
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+    X-Content-Type-Options = "nosniff"
+    # Redundant with frame-ancestors below, kept for older browsers.
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    X-DNS-Prefetch-Control = "off"
+
+    # Default for everything, including every SPA deep link: revalidate. The
+    # content-hashed bundles override this below — they are the only files that
+    # may be cached, and the only ones for which caching is safe.
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+    # Nothing in the app uses these; deny them so a future dependency can't
+    # start asking. Note: the photo picker is a plain <input type="file">, which
+    # needs no camera/microphone grant.
+    Permissions-Policy = "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
+
+    # Content-Security-Policy. Every allowance below is something the shipped
+    # bundle genuinely needs — verified against dist/ before being added:
+    #
+    #   script-src 'wasm-unsafe-eval'  expo-sqlite's web backend is wa-sqlite,
+    #       a WebAssembly build, compiled inside the worker. No 'unsafe-eval':
+    #       the three eval/Function sites in the bundle are a uuid Node
+    #       fallback, Metro's split-bundle loader (unused at output 'single')
+    #       and a feature probe inside try/catch.
+    #   worker-src 'self' blob:        expo-sqlite loads /_expo/.../worker-*.js
+    #       and MapLibre GL spawns its workers from blob: URLs.
+    #   style-src 'unsafe-inline'      react-native-web writes component styles
+    #       into a runtime-injected stylesheet; there is no nonce to attach.
+    #   connect-src                    Supabase (auth + the two share RPCs),
+    #       OpenFreeMap tiles, Open-Meteo geocoding, Nominatim search,
+    #       Frankfurter exchange rates. Nothing else — and SUPABASE_URL must be
+    #       the real project origin, not a wildcard.
+    #   img-src data: blob:            picked photos, MapLibre canvas/sprites.
+    #
+    # Deliberately absent: object-src and frame-src are 'none', there are no
+    # inline <script> tags to hash, and form-action/base-uri are pinned so an
+    # injection cannot retarget navigation.
+    Content-Security-Policy = '''
+      default-src 'self';
+      script-src 'self' 'wasm-unsafe-eval';
+      worker-src 'self' blob:;
+      child-src 'self' blob:;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: blob: https://tiles.openfreemap.org;
+      font-src 'self' data:;
+      connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://geocoding-api.open-meteo.com https://nominatim.openstreetmap.org https://api.frankfurter.dev;
+      manifest-src 'self';
+      media-src 'self' blob: data:;
+      object-src 'none';
+      frame-src 'none';
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+      upgrade-insecure-requests
+      '''
+
+# ---------------------------------------------------------------------------
+# Cache-Control — the reason a home-screen icon does or doesn't pick up a deploy
+# ---------------------------------------------------------------------------
+
+# The shell is the only file that names the current bundle hashes, so caching it
+# freezes the app on whatever version was live at the time — exactly the "I have
+# to delete and re-add the icon" symptom. It inherits must-revalidate from /*
+# above; this block only exists to make that explicit at the file itself.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# A cached sw.js is a cache that can never be replaced. (Browsers bypass the
+# HTTP cache for worker scripts nowadays, and the registration passes
+# updateViaCache: 'none' — this is the third belt.)
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Type = "application/manifest+json; charset=utf-8"
+
+# MapLibre's worker, copied out of node_modules with its version in the filename
+# (scripts/sync-maplibre-worker.mjs). Version-stamped, so immutable is safe and
+# an upgrade can never be served from a stale cache.
+[[headers]]
+  for = "/maplibre-gl-worker-*.mjs"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "text/javascript; charset=utf-8"
+
+# Content-hashed by the Expo/Metro export — a new build means new filenames, so
+# these can be pinned for a year. This is what keeps the app fast despite the
+# shell never being cached.
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Deploy Previews and branch deploys are not the production app: keep them out
+# of search engines and out of anyone's history-based guesses.
+[context.deploy-preview]
+  [[context.deploy-preview.headers]]
+    for = "/*"
+    [context.deploy-preview.headers.values]
+      X-Robots-Tag = "noindex, nofollow"
+
+[context.branch-deploy]
+  [[context.branch-deploy.headers]]
+    for = "/*"
+    [context.branch-deploy.headers.values]
+      X-Robots-Tag = "noindex, nofollow"
